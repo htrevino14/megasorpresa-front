@@ -1,24 +1,26 @@
-# Welcome to Nuxt Content Starter
+# Bienvenido a Megasorpresa 🎁
 
-This is the main page displaying Markdown located at [content/index.md](https://github.com/nuxt/starter/blob/content/content/index.md).
+La tienda online de juguetes para niños de todas las edades. Encuentra los mejores juguetes
+educativos, electrónicos y clásicos al mejor precio.
 
-Move to [about](/about) page.
+## Categorías Destacadas
 
-## Manage your Contents
+Explora nuestra amplia selección:
 
-Create new pages or modify the existing ones in `content/` directory.
+- [Bebés](/category/bebés)
+- [Niños](/category/niños)
+- [Niñas](/category/niñas)
+- [Educativos](/category/educativos)
+- [Electrónicos](/category/electrónicos)
+- [Ofertas](/category/ofertas)
 
-## Query & Render Pages
-
-You can find an example of querying contents and rendering them in a [catch-all page](https://github.com/nuxt/starter/blob/content/app/pages/%5B...slug%5D.vue)
-
-## Integrate Vue Component
+## ¿Por qué elegirnos?
 
 ::alert{color="green"}
-The current [alert](https://github.com/nuxt/starter/blob/content/app/components/Alert.vue) and the [counter](https://github.com/nuxt/starter/blob/content/app/components/Counter.vue) below are `Vue` components integrated into the Markdown.
+Envío gratis en compras mayores a $500 MXN. Entregas en 24-48 horas.
 ::
 
 ::counter
 ::
 
-Checkout out the [documentation](https://content.nuxt.com/docs/getting-started) to learn more.
+Visita nuestra página de [información](/about) para conocer más sobre nosotros.

@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Global base styles ──────────────────────────────────────────────────── */
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply font-sans text-gray-800 antialiased;
+  }
+
+  a {
+    @apply transition-colors duration-150;
+  }
+}
+
+/* ── Reusable component classes ──────────────────────────────────────────── */
+@layer components {
+  .btn-primary {
+    @apply rounded-md bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply rounded-md border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2;
+  }
+
+  .card {
+    @apply rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-200;
+  }
+}
