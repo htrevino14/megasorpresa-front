@@ -15,7 +15,7 @@ interface CategoryCard {
   bgColor: string
 }
 
-const categories: CategoryCard[] = [
+const allCategories: CategoryCard[] = [
   {
     id: 1,
     name: 'Pokémon',
@@ -73,6 +73,8 @@ const categories: CategoryCard[] = [
     bgColor: 'bg-orange-50',
   },
 ]
+
+const categories = computed(() => allCategories.slice(0, 6))
 </script>
 
 <template>
@@ -82,13 +84,13 @@ const categories: CategoryCard[] = [
         Top categorías
       </h2>
 
-      <!-- Horizontal snap carousel -->
-      <div class="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <!-- Centered 6-item grid -->
+      <div class="flex flex-wrap justify-center gap-5">
         <NuxtLink
           v-for="cat in categories"
           :key="cat.id"
           :to="`/category/${cat.slug}`"
-          class="group flex shrink-0 snap-start flex-col items-center gap-3"
+          class="group flex flex-col items-center gap-3"
         >
           <!-- Image tile -->
           <div
