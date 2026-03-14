@@ -1,12 +1,8 @@
-/**
- * Axios instance configured to communicate with the megasorpresa-back API.
- * Request interceptors (Bearer token) and response interceptors (401 handling)
- * are registered in `~/plugins/axios.ts` so they can use Nuxt's context.
- */
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:8080',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
