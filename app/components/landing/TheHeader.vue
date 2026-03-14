@@ -299,7 +299,7 @@ function toSlug(text: string): string {
 
     <!-- ── Megamenu category nav (desktop) ──────────────────────────────── -->
     <nav class="relative hidden bg-[#005ECB] md:block" @mouseleave="closeCategory">
-      <div class="mx-auto flex max-w-7xl items-center">
+      <div class="mx-auto flex max-w-7xl items-center justify-center">
         <button
           v-for="cat in navCategories"
           :key="cat.slug"
