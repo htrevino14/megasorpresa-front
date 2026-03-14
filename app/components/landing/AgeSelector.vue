@@ -63,11 +63,11 @@ const ageGroups: AgeGroup[] = [
 <template>
   <section class="bg-gray-50 px-4 py-10 md:px-8">
     <div class="mx-auto max-w-7xl">
-      <h2 class="mb-8 text-2xl font-bold text-gray-900 md:text-3xl">
+      <h2 class="mb-8 text-center text-2xl font-bold text-gray-900 md:text-3xl">
         Comprar por edad
       </h2>
 
-      <div class="flex flex-wrap justify-center gap-5 sm:justify-start">
+      <div class="flex flex-wrap justify-center gap-5">
         <NuxtLink
           v-for="group in ageGroups"
           :key="group.slug"
