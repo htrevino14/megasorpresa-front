@@ -2,191 +2,33 @@
 /**
  * TheHeader – Site header with announcement bar, blue main navigation with
  * search, megamenu dropdowns, and a collapsible mobile hamburger menu.
+ * Data is fetched from GET /api/landing/announcement-bar and /api/landing/megamenu.
  *
  * @emits none
  */
+import { getAnnouncementBar, getMegamenu } from '~/api/landing'
+import type { AnnouncementBar, MegamenuCategory } from '@@/types/index'
 
-interface SubcategoryGroup {
-  title: string
-  items: string[]
-}
+const { data: announcementData } = await useAsyncData<AnnouncementBar | null>(
+  'announcement-bar',
+  () => getAnnouncementBar().then(r => r.data.data),
+)
 
-interface PromoPanel {
-  badge: string
-  title: string
-  description: string
-  emoji: string
-  bgColor: string
-  linkText: string
-}
+const { data: megamenuData } = await useAsyncData<MegamenuCategory[]>(
+  'megamenu',
+  () => getMegamenu().then(r => r.data.data),
+)
 
-interface NavCategory {
-  name: string
-  slug: string
-  subcategoryGroups: SubcategoryGroup[]
-  promo: PromoPanel
-}
+const announcementBar = computed<AnnouncementBar | null>(() => announcementData.value ?? null)
+const navCategories = computed<MegamenuCategory[]>(() => megamenuData.value ?? [])
 
 const isTopBarVisible = ref(true)
 const isMobileMenuOpen = ref(false)
 const activeCategory = ref<string | null>(null)
 const searchQuery = ref('')
 
-const navCategories: NavCategory[] = [
-  {
-    name: 'Juguetes',
-    slug: 'juguetes',
-    subcategoryGroups: [
-      {
-        title: 'Acción y aventura',
-        items: ['Superhéroes', 'Dinosaurios', 'Robots', 'Vehículos de juguete', 'Figuras de acción'],
-      },
-      {
-        title: 'Creatividad',
-        items: ['Arte y manualidades', 'Pintura', 'Plastilina y arcilla', 'Kits de ciencia', 'Música'],
-      },
-      {
-        title: 'Juegos y puzzles',
-        items: ['Juegos de mesa', 'Puzzles', 'Juegos de cartas', 'Juegos de estrategia', 'Trivia'],
-      },
-      {
-        title: 'Muñecas y peluches',
-        items: ['Muñecas de moda', 'Bebés de juguete', 'Peluches', 'Casas de muñecas', 'Accesorios'],
-      },
-    ],
-    promo: {
-      badge: 'Nuevo',
-      title: 'Colección Primavera 2025',
-      description: 'Descubre los juguetes más populares de la temporada con hasta 30% de descuento.',
-      emoji: '🎠',
-      bgColor: 'from-yellow-400 to-orange-400',
-      linkText: 'Ver colección',
-    },
-  },
-  {
-    name: 'Bebés',
-    slug: 'bebes',
-    subcategoryGroups: [
-      {
-        title: 'Movilidad',
-        items: ['Carriolas', 'Sillas para auto', 'Portabebés', 'Andadores', 'Sillas de paseo'],
-      },
-      {
-        title: 'Descanso',
-        items: ['Cunas', 'Moisés', 'Colchones de cuna', 'Monitores de bebé', 'Sábanas y textiles'],
-      },
-      {
-        title: 'Alimentación',
-        items: ['Biberones', 'Sillas de comer', 'Sterilizadores', 'Extractores de leche', 'Baberos'],
-      },
-      {
-        title: 'Estimulación',
-        items: ['Gimnasios de actividades', 'Mordedores', 'Sonajeros', 'Juguetes de baño', 'Libros de tela'],
-      },
-    ],
-    promo: {
-      badge: 'Trending',
-      title: 'Lo mejor para tu bebé',
-      description: 'Productos seleccionados por expertos en desarrollo infantil.',
-      emoji: '👶',
-      bgColor: 'from-pink-400 to-purple-400',
-      linkText: 'Ver productos',
-    },
-  },
-  {
-    name: 'Exterior',
-    slug: 'exterior',
-    subcategoryGroups: [
-      {
-        title: 'Ruedas',
-        items: ['Bicicletas', 'Patinetes', 'Scooters eléctricos', 'Patines', 'Triciclos'],
-      },
-      {
-        title: 'Diversión al aire libre',
-        items: ['Trampolines', 'Casas de juego', 'Columpios y toboganes', 'Areneros', 'Tiendas de campaña'],
-      },
-      {
-        title: 'Agua y playa',
-        items: ['Albercas inflables', 'Pistolas de agua', 'Accesorios de playa', 'Juguetes acuáticos', 'Flotadores'],
-      },
-      {
-        title: 'Deporte',
-        items: ['Fútbol', 'Baloncesto', 'Tenis', 'Atletismo', 'Yoga infantil'],
-      },
-    ],
-    promo: {
-      badge: 'Temporada',
-      title: 'Verano al máximo',
-      description: 'Equipa a tus hijos para las mejores aventuras al aire libre.',
-      emoji: '🌞',
-      bgColor: 'from-green-400 to-teal-400',
-      linkText: 'Ver ofertas',
-    },
-  },
-  {
-    name: 'Gaming',
-    slug: 'gaming',
-    subcategoryGroups: [
-      {
-        title: 'Consolas',
-        items: ['Nintendo Switch', 'PlayStation 5', 'Xbox Series', 'Nintendo 3DS', 'Steam Deck'],
-      },
-      {
-        title: 'Videojuegos',
-        items: ['Acción', 'Aventura', 'Deportes', 'Infantiles', 'Multijugador'],
-      },
-      {
-        title: 'Accesorios',
-        items: ['Controles', 'Audífonos gaming', 'Sillas gamer', 'Fundas y estuches', 'Cargadores'],
-      },
-      {
-        title: 'PC Gaming',
-        items: ['Ratones gaming', 'Teclados', 'Monitores', 'Webcams', 'Soportes'],
-      },
-    ],
-    promo: {
-      badge: 'Hot',
-      title: 'Gaming Zone',
-      description: 'Los mejores títulos y accesorios para gamers de todas las edades.',
-      emoji: '🎮',
-      bgColor: 'from-violet-500 to-indigo-500',
-      linkText: 'Ver gaming',
-    },
-  },
-  {
-    name: 'Educativos',
-    slug: 'educativos',
-    subcategoryGroups: [
-      {
-        title: 'STEM',
-        items: ['Robótica', 'Electrónica básica', 'Química', 'Física experimental', 'Programación'],
-      },
-      {
-        title: 'Idiomas y lectura',
-        items: ['Libros infantiles', 'Cuentos ilustrados', 'Libros de actividades', 'Flashcards', 'Audiocuentos'],
-      },
-      {
-        title: 'Matemáticas',
-        items: ['Ábaco y conteo', 'Geometría', 'Juegos numéricos', 'Fracciones', 'Álgebra visual'],
-      },
-      {
-        title: 'Arte y música',
-        items: ['Instrumentos musicales', 'Kits de pintura', 'Escultura', 'Teatro', 'Danza'],
-      },
-    ],
-    promo: {
-      badge: 'Recomendado',
-      title: 'Aprende jugando',
-      description: 'Recursos educativos diseñados para potenciar el aprendizaje desde temprana edad.',
-      emoji: '🎓',
-      bgColor: 'from-blue-400 to-cyan-400',
-      linkText: 'Ver educativos',
-    },
-  },
-]
-
 const activeCategoryData = computed(() =>
-  navCategories.find((c) => c.name === activeCategory.value) ?? null,
+  navCategories.value.find((c) => c.name === activeCategory.value) ?? null,
 )
 
 function toggleMobileMenu() {
@@ -209,10 +51,24 @@ function toSlug(text: string): string {
 <template>
   <header class="sticky top-0 z-50">
     <!-- ── Announcement top bar ──────────────────────────────────────────── -->
-    <div v-if="isTopBarVisible" class="bg-gray-900 px-4 py-2 text-center text-sm text-white">
-      <span>Entrega en locker 24/7 ahora disponible.</span>
+    <div
+      v-if="isTopBarVisible && announcementBar"
+      class="px-4 py-2 text-center text-sm"
+      :style="{
+        backgroundColor: announcementBar.bg_color ?? '#111827',
+        color: announcementBar.text_color ?? '#ffffff',
+      }"
+    >
+      <span>{{ announcementBar.message }}</span>
+      <a
+        v-if="announcementBar.link_url"
+        :href="announcementBar.link_url"
+        class="ml-2 underline opacity-80 hover:opacity-100"
+      >
+        {{ announcementBar.link_label }}
+      </a>
       <button
-        class="ml-3 text-gray-400 hover:text-white"
+        class="ml-3 opacity-60 hover:opacity-100"
         aria-label="Cerrar aviso"
         @click="isTopBarVisible = false"
       >
@@ -350,48 +206,48 @@ function toSlug(text: string): string {
             <div class="grid grid-cols-5 gap-6">
               <!-- Subcategory columns -->
               <div
-                v-for="group in activeCategoryData.subcategoryGroups"
-                :key="group.title"
+                v-for="group in activeCategoryData.subcategory_groups"
+                :key="group.id"
                 class="col-span-1"
               >
                 <h3 class="mb-3 text-sm font-bold uppercase tracking-wide text-gray-800">
                   {{ group.title }}
                 </h3>
                 <ul class="space-y-1.5">
-                  <li v-for="item in group.items" :key="item">
+                  <li v-for="item in group.items" :key="item.id">
                     <NuxtLink
-                      :to="`/category/${activeCategoryData.slug}/${toSlug(item)}`"
+                      :to="`/category/${activeCategoryData.slug}/${toSlug(item.label)}`"
                       class="text-sm text-gray-600 transition-colors hover:text-[#0072E3] hover:underline"
                       @click="closeCategory"
                     >
-                      {{ item }}
+                      {{ item.label }}
                     </NuxtLink>
                   </li>
                 </ul>
               </div>
 
               <!-- Promotional panel -->
-              <div class="col-span-1">
+              <div v-if="activeCategoryData.promo_panel" class="col-span-1">
                 <div
                   class="relative flex h-full flex-col justify-between overflow-hidden rounded-lg p-5 text-white"
-                  :class="`bg-gradient-to-br ${activeCategoryData.promo.bgColor}`"
+                  :class="`bg-gradient-to-br ${activeCategoryData.promo_panel.bg_color}`"
                 >
                   <div>
                     <span class="mb-2 inline-block rounded-full bg-white/30 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide">
-                      {{ activeCategoryData.promo.badge }}
+                      {{ activeCategoryData.promo_panel.badge }}
                     </span>
-                    <div class="my-3 text-4xl">{{ activeCategoryData.promo.emoji }}</div>
-                    <h4 class="text-base font-bold leading-snug">{{ activeCategoryData.promo.title }}</h4>
+                    <div class="my-3 text-4xl">{{ activeCategoryData.promo_panel.emoji }}</div>
+                    <h4 class="text-base font-bold leading-snug">{{ activeCategoryData.promo_panel.title }}</h4>
                     <p class="mt-1.5 text-xs leading-relaxed text-white/90">
-                      {{ activeCategoryData.promo.description }}
+                      {{ activeCategoryData.promo_panel.description }}
                     </p>
                   </div>
                   <NuxtLink
-                    :to="`/category/${activeCategoryData.slug}`"
+                    :to="activeCategoryData.promo_panel.link_url"
                     class="mt-4 inline-block rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-gray-800 transition-opacity hover:opacity-90"
                     @click="closeCategory"
                   >
-                    {{ activeCategoryData.promo.linkText }} →
+                    {{ activeCategoryData.promo_panel.link_text }} →
                   </NuxtLink>
                 </div>
               </div>

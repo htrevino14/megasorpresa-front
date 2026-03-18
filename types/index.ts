@@ -109,3 +109,143 @@ export interface PaginatedResponse<T> {
     next: string | null
   }
 }
+
+// ── Landing Page Types ────────────────────────────────────────────────────────
+
+/** Active announcement bar shown at the top of the header */
+export interface AnnouncementBar {
+  id: number
+  message: string
+  link_url: string | null
+  link_label: string | null
+  bg_color: string | null
+  text_color: string | null
+}
+
+/** Hero banner slide */
+export interface HeroSlide {
+  id: number
+  title: string
+  subtitle: string
+  cta_text: string
+  cta_link: string
+  image_url_desktop: string
+  image_url_mobile: string | null
+  alt_text: string | null
+  bg_color: string | null
+  sort_order: number
+}
+
+/** Single item inside a megamenu subcategory group */
+export interface MegamenuSubcategoryItem {
+  id: number
+  label: string
+  sort_order: number
+}
+
+/** Group of subcategory items inside a megamenu category */
+export interface MegamenuSubcategoryGroup {
+  id: number
+  title: string
+  sort_order: number
+  items: MegamenuSubcategoryItem[]
+}
+
+/** Promotional panel shown in the megamenu dropdown */
+export interface MegamenuPromoPanel {
+  badge: string
+  title: string
+  description: string
+  emoji: string
+  bg_color: string
+  link_text: string
+  link_url: string
+  image_url: string | null
+}
+
+/** Top-level megamenu category with subcategory groups and optional promo panel */
+export interface MegamenuCategory {
+  id: number
+  name: string
+  slug: string
+  icon: string | null
+  sort_order: number
+  subcategory_groups: MegamenuSubcategoryGroup[]
+  promo_panel: MegamenuPromoPanel | null
+}
+
+/** Item in the "Top categorías" horizontal carousel */
+export interface CategoryCarouselItem {
+  id: number
+  name: string
+  slug: string
+  image_url: string
+  bg_color: string
+  sort_order: number
+  category_id: number | null
+}
+
+/** Age group for the "Comprar por edad" section */
+export interface AgeGroup {
+  id: number
+  label: string
+  sublabel: string
+  slug: string
+  bg_color: string
+  text_color: string
+  sort_order: number
+  category_id_destination: number | null
+}
+
+/** Single link inside a footer section */
+export interface FooterLink {
+  id: number
+  label: string
+  url: string
+  icon: string | null
+  open_in_new_tab: boolean
+  sort_order: number
+}
+
+/** Footer column section with a title and its links */
+export interface FooterSection {
+  id: number
+  title: string
+  sort_order: number
+  links: FooterLink[]
+}
+
+/** Social network link shown in the footer */
+export interface SocialLink {
+  id: number
+  platform: string
+  url: string
+  icon_class: string | null
+  icon_svg: string | null
+  initial: string
+  sort_order: number
+}
+
+/** Payment method accepted by the store */
+export interface PaymentMethod {
+  id: number
+  name: string
+  logo_url: string | null
+  icon_class: string | null
+  sort_order: number
+}
+
+/** Full footer data returned by GET /api/landing/footer */
+export interface FooterData {
+  sections: FooterSection[]
+  social_links: SocialLink[]
+  payment_methods: PaymentMethod[]
+}
+
+/** Newsletter subscription category */
+export interface NewsletterCategory {
+  id: number
+  label: string
+  slug: string
+  sort_order: number
+}
