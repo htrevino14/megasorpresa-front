@@ -2,60 +2,30 @@
 /**
  * TheFooter – Detailed footer with newsletter subscription, social links,
  * customer-info columns, payment methods, region switcher, and legal links.
+ * Data is fetched from GET /api/landing/footer and /api/landing/newsletter-categories.
  *
  * @emits none
  */
+import { getFooter, getNewsletterCategories } from '~/api/landing'
+import type { FooterData, NewsletterCategory } from '@@/types/index'
 
-interface SocialLink {
-  name: string
-  href: string
-  initial: string
-}
+const { data: footerData } = await useAsyncData<FooterData>(
+  'footer',
+  () => getFooter().then(r => r.data.data),
+)
 
-interface FooterLink {
-  label: string
-  href: string
-}
+const { data: newsletterCatsData } = await useAsyncData<NewsletterCategory[]>(
+  'newsletter-categories',
+  () => getNewsletterCategories().then(r => r.data.data),
+)
+
+const footerSections = computed(() => footerData.value?.sections ?? [])
+const socialLinks = computed(() => footerData.value?.social_links ?? [])
+const paymentMethods = computed(() => footerData.value?.payment_methods ?? [])
+const newsletterCategories = computed<NewsletterCategory[]>(() => newsletterCatsData.value ?? [])
 
 const newsletterEmail = ref('')
-const newsletterCategories = ref<string[]>([])
-
-const socialLinks: SocialLink[] = [
-  { name: 'Facebook', href: 'https://facebook.com', initial: 'f' },
-  { name: 'Instagram', href: 'https://instagram.com', initial: 'in' },
-  { name: 'YouTube', href: 'https://youtube.com', initial: '▶' },
-  { name: 'TikTok', href: 'https://tiktok.com', initial: 'tt' },
-  { name: 'X', href: 'https://x.com', initial: '𝕏' },
-  { name: 'Snapchat', href: 'https://snapchat.com', initial: '👻' },
-]
-
-const customerInfoLinks: FooterLink[] = [
-  { label: 'Solicitar catálogo', href: '/catalogue' },
-  { label: 'Tarjetas de regalo', href: '/gift-cards' },
-  { label: 'Acerca de nosotros', href: '/about' },
-  { label: 'Eventos en tienda', href: '/events' },
-  { label: 'Socios benéficos', href: '/charity' },
-  { label: 'Trabaja con nosotros', href: '/careers' },
-]
-
-const helpLinks: FooterLink[] = [
-  { label: 'Centro de ayuda', href: '/help' },
-  { label: 'Devoluciones', href: '/returns' },
-  { label: 'Envíos y entregas', href: '/shipping' },
-]
-
-const paymentMethods: string[] = ['Visa', 'Mastercard', 'Google Pay', 'Apple Pay', 'Amex', 'PayPal', 'Klarna']
-
-const regionFlags: string[] = ['🇲🇽', '🇺🇸', '🇬🇧', '🇩🇪', '🇫🇷', '🇪🇸']
-
-const legalLinks: FooterLink[] = [
-  { label: 'Preferencias de cookies', href: '/cookies' },
-  { label: 'Política de cookies', href: '/cookie-policy' },
-  { label: 'Política de privacidad', href: '/privacy' },
-  { label: 'Términos y políticas', href: '/terms' },
-  { label: 'Accesibilidad', href: '/accessibility' },
-]
-
+const selectedNewsletterSlugs = ref<string[]>([])
 const newsletterError = ref('')
 
 function submitNewsletter() {
@@ -72,9 +42,9 @@ function submitNewsletter() {
     return
   }
 
-  // Placeholder: connect to the Laravel newsletter API endpoint
+  // TODO: connect to the Laravel newsletter subscription endpoint once auth is available
   newsletterEmail.value = ''
-  newsletterCategories.value = []
+  selectedNewsletterSlugs.value = []
 }
 </script>
 
@@ -93,17 +63,18 @@ function submitNewsletter() {
             class="mt-4 w-full rounded-lg bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-300"
           />
           <div class="mt-3 flex flex-wrap gap-5 text-sm">
-            <label class="flex cursor-pointer items-center gap-2">
-              <input v-model="newsletterCategories" type="checkbox" value="juguetes" class="rounded" />
-              Juguetes
-            </label>
-            <label class="flex cursor-pointer items-center gap-2">
-              <input v-model="newsletterCategories" type="checkbox" value="bebes" class="rounded" />
-              Bebés
-            </label>
-            <label class="flex cursor-pointer items-center gap-2">
-              <input v-model="newsletterCategories" type="checkbox" value="gaming" class="rounded" />
-              Gaming
+            <label
+              v-for="cat in newsletterCategories"
+              :key="cat.slug"
+              class="flex cursor-pointer items-center gap-2"
+            >
+              <input
+                v-model="selectedNewsletterSlugs"
+                type="checkbox"
+                :value="cat.slug"
+                class="rounded"
+              />
+              {{ cat.label }}
             </label>
           </div>
           <p v-if="newsletterError" class="mt-2 text-xs text-yellow-300">
@@ -127,9 +98,9 @@ function submitNewsletter() {
           <div class="mt-4 flex flex-wrap gap-3 md:justify-end">
             <a
               v-for="social in socialLinks"
-              :key="social.name"
-              :href="social.href"
-              :aria-label="social.name"
+              :key="social.id"
+              :href="social.url"
+              :aria-label="social.platform"
               target="_blank"
               rel="noopener noreferrer"
               class="flex h-10 w-10 items-center justify-center rounded-full border border-white/50 text-sm font-bold text-white transition-colors hover:bg-white hover:text-[#0072E3]"
@@ -144,26 +115,18 @@ function submitNewsletter() {
 
       <!-- ── Info columns ───────────────────────────────────────────────── -->
       <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        <!-- Customer Information -->
-        <div>
-          <h4 class="text-base font-semibold">Información al cliente</h4>
+        <div v-for="section in footerSections" :key="section.id">
+          <h4 class="text-base font-semibold">{{ section.title }}</h4>
           <ul class="mt-4 space-y-2 text-sm text-blue-100">
-            <li v-for="link in customerInfoLinks" :key="link.href">
-              <NuxtLink :to="link.href" class="transition-colors hover:text-white">
+            <li v-for="link in section.links" :key="link.id">
+              <a
+                :href="link.url"
+                :target="link.open_in_new_tab ? '_blank' : undefined"
+                :rel="link.open_in_new_tab ? 'noopener noreferrer' : undefined"
+                class="transition-colors hover:text-white"
+              >
                 {{ link.label }}
-              </NuxtLink>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Help & FAQ -->
-        <div>
-          <h4 class="text-base font-semibold">Ayuda y FAQ</h4>
-          <ul class="mt-4 space-y-2 text-sm text-blue-100">
-            <li v-for="link in helpLinks" :key="link.href">
-              <NuxtLink :to="link.href" class="transition-colors hover:text-white">
-                {{ link.label }}
-              </NuxtLink>
+              </a>
             </li>
           </ul>
         </div>
@@ -174,43 +137,19 @@ function submitNewsletter() {
           <div class="mt-4 flex flex-wrap gap-2">
             <span
               v-for="method in paymentMethods"
-              :key="method"
+              :key="method.id"
               class="rounded bg-white px-2.5 py-1 text-xs font-semibold text-gray-800"
             >
-              {{ method }}
+              {{ method.name }}
             </span>
-          </div>
-        </div>
-
-        <!-- Switch Region -->
-        <div>
-          <h4 class="text-base font-semibold">Cambiar región</h4>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button
-              v-for="flag in regionFlags"
-              :key="flag"
-              class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg transition-colors hover:bg-white/25"
-            >
-              {{ flag }}
-            </button>
           </div>
         </div>
       </div>
 
       <hr class="my-8 border-white/30" />
 
-      <!-- ── Legal + copyright ──────────────────────────────────────────── -->
-      <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-        <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-blue-200">
-          <NuxtLink
-            v-for="link in legalLinks"
-            :key="link.href"
-            :to="link.href"
-            class="transition-colors hover:text-white"
-          >
-            {{ link.label }}
-          </NuxtLink>
-        </div>
+      <!-- ── Copyright ──────────────────────────────────────────────────── -->
+      <div class="flex flex-col items-center justify-center gap-4">
         <p class="text-xs text-blue-200">
           © {{ new Date().getFullYear() }} Megasorpresa. Todos los derechos reservados.
         </p>

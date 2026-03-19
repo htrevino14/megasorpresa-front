@@ -5,47 +5,24 @@
  *
  * @emits none
  */
+import { getHeroSlides } from '~/api/landing'
+import type { HeroSlide } from '@@/types/index'
 
-interface HeroSlide {
-  title: string
-  subtitle: string
-  ctaText: string
-  ctaLink: string
-  imageUrl: string
-}
+const { data: slidesData } = await useAsyncData<HeroSlide[]>(
+  'hero-slides',
+  () => getHeroSlides().then(r => r.data.data),
+)
 
-const heroSlides: HeroSlide[] = [
-  {
-    title: 'Gran valor – 2 x $299',
-    subtitle: "Autos de control remoto Spin n' Stunt escala 1:24",
-    ctaText: 'Comprar ahora',
-    ctaLink: '/category/juguetes',
-    imageUrl: 'https://placehold.co/900x520/4a90d9/ffffff?text=Juguetes+RC',
-  },
-  {
-    title: 'Nuevas llegadas LEGO',
-    subtitle: 'Descubre los sets más nuevos de tu colección favorita',
-    ctaText: 'Ver colección',
-    ctaLink: '/category/juguetes',
-    imageUrl: 'https://placehold.co/900x520/f97316/ffffff?text=LEGO+Sets',
-  },
-  {
-    title: 'Gaming – La mejor selección',
-    subtitle: 'Consolas, juegos y accesorios para todos los niveles',
-    ctaText: 'Explorar gaming',
-    ctaLink: '/category/gaming',
-    imageUrl: 'https://placehold.co/900x520/7c3aed/ffffff?text=Gaming',
-  },
-]
+const heroSlides = computed<HeroSlide[]>(() => slidesData.value ?? [])
 
 const currentSlide = ref(0)
 
 function nextSlide() {
-  currentSlide.value = (currentSlide.value + 1) % heroSlides.length
+  currentSlide.value = (currentSlide.value + 1) % heroSlides.value.length
 }
 
 function prevSlide() {
-  currentSlide.value = (currentSlide.value - 1 + heroSlides.length) % heroSlides.length
+  currentSlide.value = (currentSlide.value - 1 + heroSlides.value.length) % heroSlides.value.length
 }
 </script>
 
@@ -54,15 +31,15 @@ function prevSlide() {
     <!-- Slides -->
     <div
       v-for="(slide, index) in heroSlides"
-      :key="index"
+      :key="slide.id"
       class="absolute inset-0 flex transition-opacity duration-500"
       :class="index === currentSlide ? 'opacity-100' : 'pointer-events-none opacity-0'"
     >
       <!-- Right image panel (full bleed, behind gradient) -->
       <div class="absolute inset-0">
         <img
-          :src="slide.imageUrl"
-          :alt="slide.title"
+          :src="slide.image_url_desktop"
+          :alt="slide.alt_text ?? slide.title"
           class="h-full w-full object-cover"
           loading="lazy"
         />
@@ -81,10 +58,10 @@ function prevSlide() {
         </p>
         <div class="mt-6">
           <NuxtLink
-            :to="slide.ctaLink"
+            :to="slide.cta_link"
             class="inline-block rounded-full bg-white px-6 py-3 text-sm font-semibold text-gray-900 shadow-md transition-colors hover:bg-gray-100"
           >
-            {{ slide.ctaText }}
+            {{ slide.cta_text }}
           </NuxtLink>
         </div>
       </div>
@@ -115,8 +92,8 @@ function prevSlide() {
     <!-- Dot indicators -->
     <div class="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
       <button
-        v-for="(_, index) in heroSlides"
-        :key="index"
+        v-for="(slide, index) in heroSlides"
+        :key="slide.id"
         class="h-2 rounded-full transition-all"
         :class="index === currentSlide ? 'w-6 bg-white' : 'w-2 bg-white/50'"
         :aria-label="`Ir a la diapositiva ${index + 1}`"
