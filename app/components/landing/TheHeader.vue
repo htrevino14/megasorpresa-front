@@ -79,7 +79,7 @@ function toSlug(text: string): string {
 
     <!-- ── Main nav bar (blue) ───────────────────────────────────────────── -->
     <div class="bg-[#0072E3] px-4 py-3 md:px-6">
-      <div class="mx-auto flex max-w-7xl items-center gap-4">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <!-- Hamburger (mobile only) -->
         <button
           class="shrink-0 text-white md:hidden"
@@ -99,7 +99,7 @@ function toSlug(text: string): string {
         </NuxtLink>
 
         <!-- User action icons (desktop) -->
-        <div class="ml-auto hidden items-center gap-5 md:flex">
+        <div class="hidden items-center gap-5 md:flex">
           <NuxtLink
             to="/login"
             class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
