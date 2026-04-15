@@ -25,7 +25,6 @@ const navCategories = computed<MegamenuCategory[]>(() => megamenuData.value ?? [
 const isTopBarVisible = ref(true)
 const isMobileMenuOpen = ref(false)
 const activeCategory = ref<string | null>(null)
-const searchQuery = ref('')
 
 const activeCategoryData = computed(() =>
   navCategories.value.find((c) => c.name === activeCategory.value) ?? null,
@@ -80,7 +79,7 @@ function toSlug(text: string): string {
 
     <!-- ── Main nav bar (blue) ───────────────────────────────────────────── -->
     <div class="bg-[#0072E3] px-4 py-3 md:px-6">
-      <div class="mx-auto flex max-w-7xl items-center gap-4">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <!-- Hamburger (mobile only) -->
         <button
           class="shrink-0 text-white md:hidden"
@@ -99,25 +98,6 @@ function toSlug(text: string): string {
           </span>
         </NuxtLink>
 
-        <!-- Search bar -->
-        <div class="flex flex-1 items-center overflow-hidden rounded-full bg-white shadow-sm">
-          <input
-            v-model="searchQuery"
-            type="search"
-            placeholder="Buscar productos o marcas"
-            class="flex-1 bg-transparent px-4 py-2 text-sm text-gray-800 outline-none placeholder:text-gray-400"
-            aria-label="Buscar productos"
-          />
-          <button
-            class="flex items-center justify-center rounded-full bg-[#FFD200] px-4 py-2 transition-colors hover:bg-yellow-400"
-            aria-label="Buscar"
-          >
-            <svg class="h-5 w-5 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
-        </div>
-
         <!-- User action icons (desktop) -->
         <div class="hidden items-center gap-5 md:flex">
           <NuxtLink
@@ -128,16 +108,6 @@ function toSlug(text: string): string {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             <span class="text-xs">Iniciar sesión</span>
-          </NuxtLink>
-
-          <NuxtLink
-            to="/wishlist"
-            class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
-          >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-            <span class="text-xs">Lista de deseos</span>
           </NuxtLink>
 
           <NuxtLink
@@ -328,7 +298,6 @@ function toSlug(text: string): string {
         </NuxtLink>
         <div class="space-y-3 px-6 py-4 text-sm text-gray-700">
           <NuxtLink to="/login" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Iniciar sesión</NuxtLink>
-          <NuxtLink to="/wishlist" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Lista de deseos</NuxtLink>
           <NuxtLink to="/cart" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Carrito</NuxtLink>
         </div>
       </nav>
