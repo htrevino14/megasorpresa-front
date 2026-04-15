@@ -245,19 +245,19 @@ function toSlug(text: string): string {
           <svg class="h-4 w-4 text-[#0072E3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l-1 12h16L19 8M10 12v4m4-4v4" />
           </svg>
-          ENVÍO GRATIS EN PEDIDOS MAYORES A $500*
+          PERSONALIZA TU REGALO*
         </span>
         <span class="flex items-center gap-1.5 text-gray-700">
           <svg class="h-4 w-4 text-[#0072E3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          PIDE ANTES DE LAS 10 PM PARA ENTREGA AL DÍA SIGUIENTE*
+          ENVIA TODO DE HOY PARA HOY*
         </span>
         <span class="flex items-center gap-1.5 text-gray-700">
           <svg class="h-4 w-4 text-[#0072E3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
           </svg>
-          CLICK &amp; COLLECT GRATIS EN 2 HORAS*
+          JUGUETES PREMIUM*
         </span>
       </div>
     </div>
