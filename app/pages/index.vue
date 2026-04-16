@@ -3,7 +3,7 @@
  * index – Home page (Landing Page) for Megasorpresa.
  *
  * Orchestrates all landing page components:
- *   TheHeader → HeroSection → CategoryCarousel → AgeSelector → TheFooter
+ *   TheHeader → HeroSection → ExperienciaTotal → CategoryCarousel → AgeSelector → TheFooter
  *
  * Uses the "landing" layout which renders without the default site header/footer.
  */
@@ -16,6 +16,7 @@ definePageMeta({ layout: 'landing' })
 
     <main class="flex-1">
       <LandingHeroSection />
+      <LandingExperienciaTotal />
       <LandingCategoryCarousel />
       <LandingAgeSelector />
     </main>
