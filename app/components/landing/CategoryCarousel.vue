@@ -21,7 +21,7 @@ const categories = computed<CategoryCarouselItem[]>(() => carouselData.value ?? 
   <section class="bg-white px-4 py-10 md:px-8">
     <div class="mx-auto max-w-7xl">
       <h2 class="mb-6 text-2xl font-bold text-gray-900 md:text-3xl">
-        Top categorías
+        Categorías
       </h2>
 
       <!-- Centered 6-item grid -->
