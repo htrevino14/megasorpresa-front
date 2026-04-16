@@ -79,7 +79,7 @@ function toSlug(text: string): string {
 
     <!-- ── Main nav bar (blue) ───────────────────────────────────────────── -->
     <div class="bg-[#0072E3] px-4 py-3 md:px-6">
-      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
+      <div class="relative mx-auto flex max-w-7xl items-center justify-between gap-4">
         <!-- Hamburger (mobile only) -->
         <button
           class="shrink-0 text-white md:hidden"
@@ -92,9 +92,10 @@ function toSlug(text: string): string {
         </button>
 
         <!-- Logo -->
-        <NuxtLink to="/" class="shrink-0">
-          <span class="text-xl font-extrabold tracking-tight text-white">
-            🎁 <span class="text-yellow-300">Megasorpresa</span>
+        <NuxtLink to="/" class="absolute left-1/2 -translate-x-1/2 shrink-0 md:static md:translate-x-0">
+          <span class="inline-flex items-center gap-1 whitespace-nowrap text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+            <span aria-hidden="true">🎁</span>
+            <span class="text-yellow-300">Megasorpresa</span>
           </span>
         </NuxtLink>
 
