@@ -38,19 +38,19 @@ const features: Feature[] = [
 </script>
 
 <template>
-  <section class="bg-gray-50 px-4 py-12 md:px-8">
+  <section class="bg-gray-50 px-4 py-16 md:px-8 md:py-20">
     <div class="mx-auto max-w-7xl">
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div
           v-for="feature in features"
           :key="feature.key"
-          class="card flex flex-col items-center gap-4 p-8 text-center transition-shadow duration-200 hover:shadow-md"
+          class="card flex flex-col items-center gap-6 p-10 text-center transition-shadow duration-200 hover:shadow-lg"
           :class="feature.key === 'emotion' ? 'sm:col-span-2 sm:mx-auto sm:w-1/2 lg:col-span-1 lg:mx-0 lg:w-full' : ''"
         >
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-yellow-50 text-yellow-400">
+          <div class="flex h-20 w-20 items-center justify-center rounded-full bg-yellow-50 text-yellow-400">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8"
+              class="h-10 w-10"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -61,10 +61,10 @@ const features: Feature[] = [
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-bold text-gray-800">
+            <h3 class="text-2xl font-extrabold tracking-tight text-gray-900 md:text-3xl">
               {{ feature.title }}
             </h3>
-            <p class="mt-2 text-sm leading-relaxed text-gray-500">
+            <p class="mt-3 text-base leading-relaxed text-gray-600 md:text-lg">
               {{ feature.description }}
             </p>
           </div>
