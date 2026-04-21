@@ -27,32 +27,6 @@ const stockStatus = computed<'available' | 'low' | 'out'>(() => {
   if (props.stockQuantity <= 5) return 'low'
   return 'available'
 })
-
-/**
- * Escape HTML special characters to prevent XSS when rendering via v-html.
- * The ampersand must be replaced first so that the replacement strings for
- * other characters (which contain `&`) are never themselves re-escaped.
- * Each subsequent replacement targets a distinct character, so the `&amp;`
- * already written in step 1 is never matched again.
- */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
-/**
- * Sanitise the description by escaping all HTML special characters and
- * converting newline characters to <br> elements so multi-line descriptions
- * render correctly without executing arbitrary HTML.
- */
-const safeDescription = computed<string | null>(() => {
-  if (!props.description) return null
-  return escapeHtml(props.description).replace(/\n/g, '<br>')
-})
 </script>
 
 <template>
@@ -102,11 +76,11 @@ const safeDescription = computed<string | null>(() => {
     <hr class="border-gray-200" />
 
     <!-- Description -->
-    <div v-if="safeDescription" class="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-html="safeDescription" />
-    </div>
-    <p v-else class="text-sm text-gray-400 italic">
+    <p
+      v-if="description"
+      class="max-w-none whitespace-pre-wrap text-sm leading-relaxed text-gray-700"
+    >{{ description }}</p>
+    <p v-else class="text-sm italic text-gray-400">
       Sin descripción disponible.
     </p>
   </div>
