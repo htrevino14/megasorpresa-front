@@ -24,7 +24,7 @@ export default defineNuxtConfig({
       ],
     },
   },
-  css: ['~/assets/styles/main.css'],
+  css: ['~/assets/styles/main.css', 'leaflet/dist/leaflet.css'],
   devtools: { enabled: true },
   compatibilityDate: '2024-04-03',
   runtimeConfig: {

@@ -249,3 +249,13 @@ export interface NewsletterCategory {
   slug: string
   sort_order: number
 }
+
+/** ZIP code coverage validation state */
+export interface ZipCodeState {
+  /** The last ZIP code entered by the user */
+  zipCode: string
+  /** Whether the ZIP code has been validated and is covered */
+  isCovered: boolean | null
+  /** Whether a validated ZIP code has been confirmed */
+  isValidated: boolean
+}
