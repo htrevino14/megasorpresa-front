@@ -9,11 +9,11 @@
  *
  * @prop {string[]} allowedZipCodes - Array of CPs covered by same-day delivery.
  *
- * The interactive Leaflet map is rendered client-side only (via <ClientOnly>) to
- * avoid SSR mismatches.  Coverage polygons are drawn for Cumbres, San Pedro
- * Garza García and Carretera Nacional.
+ * The interactive Leaflet map is rendered via <HomeZipCodeMap> inside a
+ * <ClientOnly> block.  That child component's onMounted fires only after the
+ * DOM element actually exists, avoiding the common Nuxt pitfall where a
+ * parent's onMounted runs before <ClientOnly> renders its slot.
  */
-import type * as LeafletTypes from 'leaflet'
 import { useZipCodeStore } from '~/stores/zipCode'
 
 const props = withDefaults(
@@ -76,78 +76,6 @@ function reset() {
   hasError.value = false
   zipCodeStore.clearZipCode()
 }
-
-// ── Leaflet map ──────────────────────────────────────────────────────────────
-
-/** Approximate GeoJSON polygons for each delivery zone around Monterrey. */
-const coverageZones = [
-  {
-    name: 'Cumbres',
-    color: '#F59E0B',
-    // Approximate bounding polygon – Cumbres sector (NW Monterrey)
-    coords: [
-      [25.756, -100.420],
-      [25.762, -100.373],
-      [25.730, -100.360],
-      [25.718, -100.390],
-      [25.718, -100.420],
-    ] as [number, number][],
-  },
-  {
-    name: 'San Pedro Garza García',
-    color: '#3B82F6',
-    // Approximate bounding polygon – San Pedro (SW Monterrey)
-    coords: [
-      [25.668, -100.425],
-      [25.668, -100.360],
-      [25.630, -100.355],
-      [25.620, -100.415],
-    ] as [number, number][],
-  },
-  {
-    name: 'Carretera Nacional',
-    color: '#10B981',
-    // Approximate bounding polygon – Carretera Nacional (SE Monterrey)
-    coords: [
-      [25.620, -100.270],
-      [25.640, -100.195],
-      [25.595, -100.180],
-      [25.580, -100.250],
-    ] as [number, number][],
-  },
-]
-
-const mapContainerRef = ref<HTMLDivElement | null>(null)
-
-onMounted(async () => {
-  if (!mapContainerRef.value) return
-
-  const L = (await import('leaflet')).default as typeof LeafletTypes
-
-  const map = L.map(mapContainerRef.value, {
-    center: [25.686, -100.316],
-    zoom: 11,
-    zoomControl: true,
-    scrollWheelZoom: false,
-  })
-
-  // Silver/minimal tile layer (OpenStreetMap)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 18,
-  }).addTo(map)
-
-  for (const zone of coverageZones) {
-    L.polygon(zone.coords, {
-      color: zone.color,
-      fillColor: zone.color,
-      fillOpacity: 0.25,
-      weight: 2,
-    })
-      .addTo(map)
-      .bindTooltip(zone.name, { permanent: false, direction: 'center' })
-  }
-})
 </script>
 
 <template>
@@ -301,16 +229,11 @@ onMounted(async () => {
         </div>
 
         <!-- Right: interactive map -->
-        <div class="relative overflow-hidden rounded-2xl">
+        <div class="relative h-80 overflow-hidden rounded-2xl md:h-auto">
           <ClientOnly>
-            <div
-              ref="mapContainerRef"
-              class="h-72 w-full md:h-full"
-              style="min-height: 300px;"
-              aria-label="Mapa de zonas de cobertura en Monterrey"
-            />
+            <HomeZipCodeMap class="absolute inset-0" />
             <template #fallback>
-              <div class="flex h-72 items-center justify-center rounded-2xl bg-white/5 md:h-full">
+              <div class="flex h-full items-center justify-center rounded-2xl bg-white/5">
                 <p class="text-sm text-blue-300">Cargando mapa…</p>
               </div>
             </template>
