@@ -13,6 +13,7 @@
  * avoid SSR mismatches.  Coverage polygons are drawn for Cumbres, San Pedro
  * Garza García and Carretera Nacional.
  */
+import type * as LeafletTypes from 'leaflet'
 import { useZipCodeStore } from '~/stores/zipCode'
 
 const props = withDefaults(
@@ -121,7 +122,7 @@ const mapContainerRef = ref<HTMLDivElement | null>(null)
 onMounted(async () => {
   if (!mapContainerRef.value) return
 
-  const L = (await import('leaflet')).default
+  const L = (await import('leaflet')).default as typeof LeafletTypes
 
   const map = L.map(mapContainerRef.value, {
     center: [25.686, -100.316],

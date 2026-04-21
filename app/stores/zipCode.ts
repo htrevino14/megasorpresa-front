@@ -9,9 +9,41 @@
  * - The validated CP is persisted in `localStorage` under the key `validated_zip_code`.
  * - Call `restoreZipCode()` from a client-only plugin to rehydrate state
  *   safely without SSR mismatches.
+ * - All localStorage access is guarded by `import.meta.client` to prevent
+ *   SSR errors and wrapped in try-catch to handle SecurityError exceptions
+ *   (e.g. when third-party cookies / storage are disabled by the browser).
  */
 import { defineStore } from 'pinia'
 import type { ZipCodeState } from '@@/types/index'
+
+const STORAGE_KEY = 'validated_zip_code'
+
+function safeGetItem(key: string): string | null {
+  if (!import.meta.client) return null
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  if (!import.meta.client) return
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Silently ignore quota or security errors
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  if (!import.meta.client) return
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    // Silently ignore security errors
+  }
+}
 
 export const useZipCodeStore = defineStore('zipCode', {
   state: (): ZipCodeState => ({
@@ -34,7 +66,7 @@ export const useZipCodeStore = defineStore('zipCode', {
      * Call this once on the client to avoid SSR hydration mismatches.
      */
     restoreZipCode(): void {
-      const saved = localStorage.getItem('validated_zip_code')
+      const saved = safeGetItem(STORAGE_KEY)
       if (saved) {
         this.zipCode = saved
         this.isCovered = true
@@ -50,7 +82,7 @@ export const useZipCodeStore = defineStore('zipCode', {
       this.zipCode = zip
       this.isCovered = true
       this.isValidated = true
-      localStorage.setItem('validated_zip_code', zip)
+      safeSetItem(STORAGE_KEY, zip)
     },
 
     /**
@@ -61,7 +93,7 @@ export const useZipCodeStore = defineStore('zipCode', {
       this.zipCode = zip
       this.isCovered = false
       this.isValidated = true
-      localStorage.removeItem('validated_zip_code')
+      safeRemoveItem(STORAGE_KEY)
     },
 
     /** Reset the validation state. */
@@ -69,7 +101,7 @@ export const useZipCodeStore = defineStore('zipCode', {
       this.zipCode = ''
       this.isCovered = null
       this.isValidated = false
-      localStorage.removeItem('validated_zip_code')
+      safeRemoveItem(STORAGE_KEY)
     },
   },
 })
