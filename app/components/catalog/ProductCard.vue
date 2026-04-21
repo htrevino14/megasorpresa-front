@@ -34,7 +34,7 @@ const numericPrice = computed<number>(() => parseFloat(props.product.base_price)
     @mouseleave="isHovered = false"
   >
     <!-- Product image -->
-    <NuxtLink :to="`/products/${product.slug}`" class="block overflow-hidden rounded-t-lg">
+    <NuxtLink :to="`/producto/${product.slug}`" class="block overflow-hidden rounded-t-lg">
       <div class="relative aspect-square overflow-hidden bg-gray-100">
         <img
           :src="displayImage"
@@ -54,7 +54,7 @@ const numericPrice = computed<number>(() => parseFloat(props.product.base_price)
 
     <!-- Card body -->
     <div class="flex flex-1 flex-col gap-2 p-3">
-      <NuxtLink :to="`/products/${product.slug}`" class="line-clamp-2 text-sm font-semibold text-gray-800 hover:text-yellow-500">
+      <NuxtLink :to="`/producto/${product.slug}`" class="line-clamp-2 text-sm font-semibold text-gray-800 hover:text-yellow-500">
         {{ product.name }}
       </NuxtLink>
 
