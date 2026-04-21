@@ -259,3 +259,35 @@ export interface ZipCodeState {
   /** Whether a validated ZIP code has been confirmed */
   isValidated: boolean
 }
+
+// ── Catalog Types ─────────────────────────────────────────────────────────────
+
+/** Minimal category attached to a catalog product */
+export interface CatalogCategory {
+  id: number
+  name: string
+  slug: string
+}
+
+/**
+ * Product as returned by GET /api/catalog/products.
+ * `base_price` comes as a numeric string from the backend and must be parsed
+ * with `parseFloat()` before display.
+ */
+export interface CatalogProduct {
+  id: number
+  name: string
+  slug: string
+  base_price: string
+  primary_image: string
+  gallery?: string[]
+  categories: CatalogCategory[]
+}
+
+/** Query parameters accepted by GET /api/catalog/products */
+export interface CatalogQueryParams {
+  page?: number
+  category?: string
+  sort?: string
+  search?: string
+}
