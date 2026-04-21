@@ -29,20 +29,29 @@ const stockStatus = computed<'available' | 'low' | 'out'>(() => {
 })
 
 /**
- * Sanitise the description by stripping all HTML tags and preserving line
- * breaks as <br> elements. This avoids an XSS vulnerability while still
- * rendering multi-line descriptions correctly.
+ * Escape HTML special characters to prevent XSS when rendering via v-html.
+ * The ampersand must be replaced first so that the replacement strings for
+ * other characters (which contain `&`) are never themselves re-escaped.
+ * Each subsequent replacement targets a distinct character, so the `&amp;`
+ * already written in step 1 is never matched again.
  */
-const safeDescription = computed<string | null>(() => {
-  if (!props.description) return null
-  const escaped = props.description
+function escapeHtml(text: string): string {
+  return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
-    .replace(/\n/g, '<br>')
-  return escaped
+}
+
+/**
+ * Sanitise the description by escaping all HTML special characters and
+ * converting newline characters to <br> elements so multi-line descriptions
+ * render correctly without executing arbitrary HTML.
+ */
+const safeDescription = computed<string | null>(() => {
+  if (!props.description) return null
+  return escapeHtml(props.description).replace(/\n/g, '<br>')
 })
 </script>
 

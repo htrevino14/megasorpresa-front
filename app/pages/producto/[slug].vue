@@ -103,7 +103,7 @@ useHead(
           <span aria-hidden="true">/</span>
           <NuxtLink to="/catalog" class="hover:text-[#0072E3]">Catálogo</NuxtLink>
           <span aria-hidden="true">/</span>
-          <span class="line-clamp-1 text-gray-700 font-medium">{{ product.name }}</span>
+          <span class="line-clamp-1 font-medium text-gray-700">{{ product.name }}</span>
         </nav>
 
         <!-- Two-column grid: gallery (60 %) + info (40 %) -->
@@ -118,7 +118,8 @@ useHead(
           </div>
 
           <!-- ── Right: Info + Actions (2/5 = 40 %) ─────────────────────── -->
-          <div class="lg:col-span-2 lg:sticky lg:top-[var(--header-height,6rem)] flex flex-col gap-6">
+          <!-- top-28 accounts for the sticky header (~7rem) with a small buffer -->
+          <div class="lg:col-span-2 lg:sticky lg:top-28 flex flex-col gap-6">
             <ProductProductInfo
               :name="product.name"
               :base-price="product.base_price"
