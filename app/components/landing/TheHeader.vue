@@ -3,11 +3,16 @@
  * TheHeader – Site header with announcement bar, blue main navigation with
  * search, megamenu dropdowns, and a collapsible mobile hamburger menu.
  * Data is fetched from GET /api/landing/announcement-bar and /api/landing/megamenu.
+ * Shows a dynamic auth section: "Mi Cuenta" + logout when authenticated,
+ * "Iniciar sesión" link when not.
  *
  * @emits none
  */
 import { getAnnouncementBar, getMegamenu } from '~/api/landing'
 import type { AnnouncementBar, MegamenuCategory } from '@@/types/index'
+import { useAuthStore } from '~/stores/auth'
+
+const auth = useAuthStore()
 
 const { data: announcementData } = await useAsyncData<AnnouncementBar | null>(
   'announcement-bar',
@@ -101,15 +106,42 @@ function toSlug(text: string): string {
 
         <!-- User action icons (desktop) -->
         <div class="hidden items-center gap-5 md:flex">
-          <NuxtLink
-            to="/login"
-            class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
-          >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span class="text-xs">Iniciar sesión</span>
-          </NuxtLink>
+          <template v-if="auth.isAuthenticated">
+            <!-- Authenticated: Mi Cuenta + Cerrar sesión -->
+            <div class="relative flex items-center gap-3">
+              <NuxtLink
+                to="/account"
+                class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span class="text-xs">{{ auth.user?.name ?? 'Mi Cuenta' }}</span>
+              </NuxtLink>
+              <button
+                class="flex flex-col items-center gap-0.5 text-white/70 transition-colors hover:text-yellow-200"
+                aria-label="Cerrar sesión"
+                @click="auth.logout().then(() => navigateTo('/login'))"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" />
+                </svg>
+                <span class="text-xs">Salir</span>
+              </button>
+            </div>
+          </template>
+          <template v-else>
+            <!-- Unauthenticated: Iniciar sesión -->
+            <NuxtLink
+              to="/login"
+              class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
+            >
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span class="text-xs">Iniciar sesión</span>
+            </NuxtLink>
+          </template>
 
           <NuxtLink
             to="/cart"
@@ -298,7 +330,21 @@ function toSlug(text: string): string {
           Buscador de regalos
         </NuxtLink>
         <div class="space-y-3 px-6 py-4 text-sm text-gray-700">
-          <NuxtLink to="/login" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Iniciar sesión</NuxtLink>
+          <template v-if="auth.isAuthenticated">
+            <NuxtLink to="/account" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">
+              {{ auth.user?.name ? `Hola, ${auth.user.name}` : 'Mi Cuenta' }}
+            </NuxtLink>
+            <button
+              class="block w-full text-left text-red-500 hover:text-red-700"
+              @click="auth.logout().then(() => { toggleMobileMenu(); navigateTo('/login') })"
+            >
+              Cerrar sesión
+            </button>
+          </template>
+          <template v-else>
+            <NuxtLink to="/login" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Iniciar sesión</NuxtLink>
+            <NuxtLink to="/register" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Crear cuenta</NuxtLink>
+          </template>
           <NuxtLink to="/cart" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Carrito</NuxtLink>
         </div>
       </nav>

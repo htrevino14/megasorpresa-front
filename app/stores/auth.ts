@@ -1,8 +1,8 @@
 /**
  * Authentication Pinia store.
  *
- * Manages login, logout and the current user session in coordination with
- * the Bearer token system exposed by megasorpresa-back.
+ * Manages login, registration, logout and the current user session in
+ * coordination with the Bearer token system exposed by megasorpresa-back.
  *
  * @remarks
  * - Token is persisted in `localStorage` under the key `auth_token`.
@@ -10,6 +10,8 @@
  *   attaches the `Authorization` header on every outgoing request.
  * - Call `restoreSession()` from a client-only plugin to rehydrate state
  *   safely without SSR mismatches.
+ * - All localStorage access is guarded by `import.meta.client` and wrapped
+ *   in try-catch blocks following the same pattern as zipCode.ts.
  */
 import { defineStore } from 'pinia'
 import type { User, AuthResponse } from '@@/types/index'
@@ -20,6 +22,35 @@ interface AuthState {
   user: User | null
   /** Raw Bearer token string, or `null` when logged out */
   token: string | null
+}
+
+const STORAGE_KEY = 'auth_token'
+
+function safeGetItem(key: string): string | null {
+  if (!import.meta.client) return null
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  if (!import.meta.client) return
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Silently ignore quota or security errors
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  if (!import.meta.client) return
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    // Silently ignore security errors
+  }
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -44,7 +75,7 @@ export const useAuthStore = defineStore('auth', {
      * SSR hydration mismatches when reading browser storage.
      */
     restoreSession(): void {
-      const storedToken = localStorage.getItem('auth_token')
+      const storedToken = safeGetItem(STORAGE_KEY)
       if (storedToken) {
         this.token = storedToken
       }
@@ -59,7 +90,31 @@ export const useAuthStore = defineStore('auth', {
       const { data } = await api.post<AuthResponse>('/auth/login', { email, password })
       this.token = data.token
       this.user = data.user
-      localStorage.setItem('auth_token', data.token)
+      safeSetItem(STORAGE_KEY, data.token)
+    },
+
+    /**
+     * Register a new account and store the returned session token.
+     * @param name - Full name of the new user.
+     * @param email - User email address.
+     * @param password - Plain-text password (sent over HTTPS).
+     * @param passwordConfirmation - Must match `password`.
+     */
+    async register(
+      name: string,
+      email: string,
+      password: string,
+      passwordConfirmation: string,
+    ): Promise<void> {
+      const { data } = await api.post<AuthResponse>('/auth/register', {
+        name,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,
+      })
+      this.token = data.token
+      this.user = data.user
+      safeSetItem(STORAGE_KEY, data.token)
     },
 
     /**
@@ -71,7 +126,7 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.token = null
         this.user = null
-        localStorage.removeItem('auth_token')
+        safeRemoveItem(STORAGE_KEY)
       }
     },
 
