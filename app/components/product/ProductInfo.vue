@@ -12,13 +12,15 @@
 import type { CatalogCategory } from '@@/types/index'
 import { formatPrice } from '~/utils/index'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   name: string
   basePrice: string
   description: string | null
   categories: CatalogCategory[]
   stockQuantity: number
-}>()
+}>(), {
+  categories: () => [],
+})
 
 const numericPrice = computed<number>(() => parseFloat(props.basePrice))
 

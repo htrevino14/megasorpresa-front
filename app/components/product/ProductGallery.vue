@@ -16,11 +16,13 @@
  */
 import type { ProductImage } from '@@/types/index'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   primaryImage: string | null
   images: ProductImage[]
   productName: string
-}>()
+}>(), {
+  images: () => [],
+})
 
 // ── Normalise image list ───────────────────────────────────────────────────────
 const allImages = computed<ProductImage[]>(() => {
@@ -70,14 +72,14 @@ function closeLightbox() {
   lightboxOpen.value = false
 }
 
-// Close lightbox on Escape key
-if (import.meta.client) {
-  useEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Escape') closeLightbox()
-    if (e.key === 'ArrowLeft' && lightboxOpen.value) prev()
-    if (e.key === 'ArrowRight' && lightboxOpen.value) next()
-  })
+// Close lightbox / navigate with keyboard (Esc / ← / →)
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') closeLightbox()
+  if (e.key === 'ArrowLeft' && lightboxOpen.value) prev()
+  if (e.key === 'ArrowRight' && lightboxOpen.value) next()
 }
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
