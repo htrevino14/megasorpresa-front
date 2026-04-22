@@ -110,7 +110,7 @@ useHead(
         <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-5">
           <!-- ── Left: Gallery (3/5 = 60 %) ─────────────────────────────── -->
           <div class="lg:col-span-3">
-            <ProductProductGallery
+            <ProductGallery
               :primary-image="product.primary_image"
               :images="product.images"
               :product-name="product.name"
@@ -120,7 +120,7 @@ useHead(
           <!-- ── Right: Info + Actions (2/5 = 40 %) ─────────────────────── -->
           <!-- top-28 accounts for the sticky header (~7rem) with a small buffer -->
           <div class="flex flex-col gap-6 lg:col-span-2 lg:sticky lg:top-28">
-            <ProductProductInfo
+            <ProductInfo
               :name="product.name"
               :base-price="product.base_price"
               :description="product.description"
