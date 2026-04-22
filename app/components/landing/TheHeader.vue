@@ -11,18 +11,18 @@
 import { getAnnouncementBar, getMegamenu } from '~/api/landing'
 import type { AnnouncementBar, MegamenuCategory } from '@@/types/index'
 import { useAuthStore } from '~/stores/auth'
+import { useAuthModalStore } from '~/stores/authModal'
 
 const auth = useAuthStore()
+const authModal = useAuthModalStore()
 
 async function handleLogout() {
   await auth.logout()
-  await navigateTo('/login')
 }
 
 async function handleMobileLogout() {
   toggleMobileMenu()
   await auth.logout()
-  await navigateTo('/login')
 }
 
 const { data: announcementData } = await useAsyncData<AnnouncementBar | null>(
@@ -143,15 +143,15 @@ function toSlug(text: string): string {
           </template>
           <template v-else>
             <!-- Unauthenticated: Iniciar sesión -->
-            <NuxtLink
-              to="/login"
+            <button
               class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
+              @click="authModal.open('login')"
             >
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <span class="text-xs">Iniciar sesión</span>
-            </NuxtLink>
+            </button>
           </template>
 
           <NuxtLink
@@ -353,8 +353,8 @@ function toSlug(text: string): string {
             </button>
           </template>
           <template v-else>
-            <NuxtLink to="/login" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Iniciar sesión</NuxtLink>
-            <NuxtLink to="/register" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Crear cuenta</NuxtLink>
+            <button class="block w-full text-left hover:text-[#0072E3]" @click="toggleMobileMenu(); authModal.open('login')">Iniciar sesión</button>
+            <button class="block w-full text-left hover:text-[#0072E3]" @click="toggleMobileMenu(); authModal.open('register')">Crear cuenta</button>
           </template>
           <NuxtLink to="/cart" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Carrito</NuxtLink>
         </div>

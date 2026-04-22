@@ -8,8 +8,10 @@
  * @emits none
  */
 import { useAuthStore } from '~/stores/auth'
+import { useAuthModalStore } from '~/stores/authModal'
 
 const auth = useAuthStore()
+const authModal = useAuthModalStore()
 const categories = ['Bebés', 'Niños', 'Niñas', 'Educativos', 'Electrónicos', 'Ofertas']
 </script>
 
@@ -54,12 +56,12 @@ const categories = ['Bebés', 'Niños', 'Niñas', 'Educativos', 'Electrónicos',
               </button>
             </template>
             <template v-else>
-              <NuxtLink
-                to="/login"
+              <button
                 class="rounded-md bg-yellow-400 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-500 transition-colors"
+                @click="authModal.open('login')"
               >
                 Iniciar sesión
-              </NuxtLink>
+              </button>
             </template>
           </div>
         </div>
