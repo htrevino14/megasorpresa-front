@@ -25,6 +25,7 @@ interface AuthState {
 }
 
 const STORAGE_KEY = 'auth_token'
+const USER_KEY = 'auth_user'
 
 function safeGetItem(key: string): string | null {
   if (!import.meta.client) return null
@@ -79,6 +80,14 @@ export const useAuthStore = defineStore('auth', {
       if (storedToken) {
         this.token = storedToken
       }
+      const storedUser = safeGetItem(USER_KEY)
+      if (storedUser) {
+        try {
+          this.user = JSON.parse(storedUser) as User
+        } catch {
+          safeRemoveItem(USER_KEY)
+        }
+      }
     },
 
     /**
@@ -91,6 +100,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = data.token
       this.user = data.user
       safeSetItem(STORAGE_KEY, data.token)
+      safeSetItem(USER_KEY, JSON.stringify(data.user))
     },
 
     /**
@@ -110,6 +120,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = data.token
       this.user = data.user
       safeSetItem(STORAGE_KEY, data.token)
+      safeSetItem(USER_KEY, JSON.stringify(data.user))
     },
 
     /**
@@ -122,6 +133,7 @@ export const useAuthStore = defineStore('auth', {
         this.token = null
         this.user = null
         safeRemoveItem(STORAGE_KEY)
+        safeRemoveItem(USER_KEY)
       }
     },
 
@@ -132,6 +144,7 @@ export const useAuthStore = defineStore('auth', {
     async fetchUser(): Promise<void> {
       const { data } = await fetchCurrentUser()
       this.user = data
+      safeSetItem(USER_KEY, JSON.stringify(data))
     },
   },
 })
