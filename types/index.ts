@@ -291,3 +291,29 @@ export interface CatalogQueryParams {
   sort?: string
   search?: string
 }
+
+// ── Product Detail Types ──────────────────────────────────────────────────────
+
+/** Single product image with ordering metadata */
+export interface ProductImage {
+  id: number
+  url: string
+  is_primary: boolean
+  order: number
+}
+
+/**
+ * Full product detail as returned by GET /api/catalog/products/:slug.
+ * `base_price` comes as a numeric string and must be parsed with `parseFloat()`.
+ */
+export interface ProductDetail {
+  id: number
+  name: string
+  slug: string
+  base_price: string
+  description: string | null
+  primary_image: string
+  images: ProductImage[]
+  stock_quantity: number
+  categories: CatalogCategory[]
+}

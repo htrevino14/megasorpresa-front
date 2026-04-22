@@ -1,5 +1,5 @@
 import api from '~/api/index'
-import type { CatalogProduct, CatalogQueryParams, PaginatedResponse } from '@@/types/index'
+import type { CatalogProduct, CatalogQueryParams, PaginatedResponse, ProductDetail } from '@@/types/index'
 
 /**
  * Fetch a paginated list of products from the catalog.
@@ -7,3 +7,10 @@ import type { CatalogProduct, CatalogQueryParams, PaginatedResponse } from '@@/t
  */
 export const getCatalogProducts = (params?: CatalogQueryParams) =>
   api.get<PaginatedResponse<CatalogProduct>>('/catalog/products', { params })
+
+/**
+ * Fetch a single product by its numeric ID.
+ * @param id - The product ID.
+ */
+export const getCatalogProduct = (id: number) =>
+  api.get<{ data: ProductDetail }>(`/catalog/products/${id}`)
