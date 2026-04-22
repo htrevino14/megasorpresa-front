@@ -14,8 +14,8 @@
  *   in try-catch blocks following the same pattern as zipCode.ts.
  */
 import { defineStore } from 'pinia'
-import type { User, AuthResponse } from '@@/types/index'
-import api from '~/api/index'
+import type { User } from '@@/types/index'
+import { loginUser, registerUser, logoutUser, fetchCurrentUser } from '~/api/auth'
 
 interface AuthState {
   /** Authenticated user, or `null` when logged out */
@@ -87,7 +87,7 @@ export const useAuthStore = defineStore('auth', {
      * @param password - Plain-text password (sent over HTTPS).
      */
     async login(email: string, password: string): Promise<void> {
-      const { data } = await api.post<AuthResponse>('/auth/login', { email, password })
+      const { data } = await loginUser(email, password)
       this.token = data.token
       this.user = data.user
       safeSetItem(STORAGE_KEY, data.token)
@@ -106,12 +106,7 @@ export const useAuthStore = defineStore('auth', {
       password: string,
       passwordConfirmation: string,
     ): Promise<void> {
-      const { data } = await api.post<AuthResponse>('/auth/register', {
-        name,
-        email,
-        password,
-        password_confirmation: passwordConfirmation,
-      })
+      const { data } = await registerUser(name, email, password, passwordConfirmation)
       this.token = data.token
       this.user = data.user
       safeSetItem(STORAGE_KEY, data.token)
@@ -122,7 +117,7 @@ export const useAuthStore = defineStore('auth', {
      */
     async logout(): Promise<void> {
       try {
-        await api.post('/auth/logout')
+        await logoutUser()
       } finally {
         this.token = null
         this.user = null
@@ -135,7 +130,7 @@ export const useAuthStore = defineStore('auth', {
      * Call this on app mount to restore the session from a persisted token.
      */
     async fetchUser(): Promise<void> {
-      const { data } = await api.get<User>('/auth/me')
+      const { data } = await fetchCurrentUser()
       this.user = data
     },
   },

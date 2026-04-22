@@ -1,5 +1,5 @@
 import api from '~/api/index'
-import type { AuthResponse } from '@@/types/index'
+import type { AuthResponse, User } from '@@/types/index'
 
 /**
  * Authenticate an existing user.
@@ -33,3 +33,8 @@ export const registerUser = (
  * Invalidate the current Bearer token on the server.
  */
 export const logoutUser = () => api.post('/auth/logout')
+
+/**
+ * Fetch the currently authenticated user's profile.
+ */
+export const fetchCurrentUser = () => api.get<User>('/auth/me')

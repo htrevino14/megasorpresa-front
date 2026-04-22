@@ -14,6 +14,17 @@ import { useAuthStore } from '~/stores/auth'
 
 const auth = useAuthStore()
 
+async function handleLogout() {
+  await auth.logout()
+  await navigateTo('/login')
+}
+
+async function handleMobileLogout() {
+  toggleMobileMenu()
+  await auth.logout()
+  await navigateTo('/login')
+}
+
 const { data: announcementData } = await useAsyncData<AnnouncementBar | null>(
   'announcement-bar',
   () => getAnnouncementBar().then(r => r.data.data),
@@ -121,7 +132,7 @@ function toSlug(text: string): string {
               <button
                 class="flex flex-col items-center gap-0.5 text-white/70 transition-colors hover:text-yellow-200"
                 aria-label="Cerrar sesión"
-                @click="auth.logout().then(() => navigateTo('/login'))"
+                @click="handleLogout"
               >
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" />
@@ -336,7 +347,7 @@ function toSlug(text: string): string {
             </NuxtLink>
             <button
               class="block w-full text-left text-red-500 hover:text-red-700"
-              @click="auth.logout().then(() => { toggleMobileMenu(); navigateTo('/login') })"
+              @click="handleMobileLogout"
             >
               Cerrar sesión
             </button>
