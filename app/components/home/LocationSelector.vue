@@ -76,8 +76,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-4xl px-4">
-    <!-- Warning Toast -->
+  <!-- Warning Toast - Positioned at document level -->
+  <Teleport to="body">
     <Transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="translate-x-full opacity-0"
@@ -88,14 +88,28 @@ function handleSubmit() {
     >
       <div
         v-if="showWarning"
-        class="fixed right-4 top-4 z-50 max-w-sm rounded-lg bg-yellow-400 p-4 shadow-xl"
+        class="fixed right-4 top-20 z-[9999] max-w-sm rounded-lg bg-yellow-400 p-4 shadow-2xl"
+        role="alert"
       >
-        <p class="text-sm font-bold text-gray-900">
-          ¡Espera! ¿A dónde quieres enviar? Elige una ciudad y te mostraremos los regalos disponibles ahí
-        </p>
+        <div class="flex items-start gap-3">
+          <p class="flex-1 text-sm font-bold text-gray-900">
+            ¡Espera! ¿A dónde quieres enviar? Elige una ciudad y te mostraremos los regalos disponibles ahí
+          </p>
+          <button
+            type="button"
+            class="flex-shrink-0 rounded-full p-1 hover:bg-yellow-500"
+            @click="showWarning = false"
+          >
+            <svg class="h-4 w-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
     </Transition>
+  </Teleport>
 
+  <div class="mx-auto w-full max-w-4xl px-4">
     <div class="rounded-2xl bg-white p-6 shadow-2xl md:p-8">
       <!-- Title -->
       <h2 class="mb-6 text-center text-2xl font-bold text-gray-900 md:text-3xl">
