@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * LocationSelector – Card component for selecting Estado, Ciudad, and Fecha de entrega.
+ * LocationSelector – Card component for selecting Estado and Ciudad.
  *
  * Designed to be placed over the hero banner with a floating card style.
  * Saves selection to Pinia store and navigates to catalog.
@@ -27,7 +27,7 @@ const ciudadesPorEstado: Record<string, string[]> = {
 
 const selectedEstado = ref('')
 const selectedCiudad = ref('')
-const selectedFecha = ref('')
+const showWarning = ref(false)
 
 // Computed cities based on selected state
 const availableCiudades = computed(() => {
@@ -42,17 +42,18 @@ watch(selectedEstado, () => {
 
 // Validation
 const isFormValid = computed(
-  () => selectedEstado.value && selectedCiudad.value && selectedFecha.value,
+  () => selectedEstado.value && selectedCiudad.value,
 )
 
-// Minimum date is today
-const minDate = computed(() => {
-  const today = new Date()
-  return today.toISOString().split('T')[0]
-})
-
 function handleSubmit() {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) {
+    // Show warning toast
+    showWarning.value = true
+    setTimeout(() => {
+      showWarning.value = false
+    }, 5000)
+    return
+  }
 
   const estadoObj = estados.find(e => e.code === selectedEstado.value)
   if (!estadoObj) return
@@ -61,7 +62,6 @@ function handleSubmit() {
     stateCode: selectedEstado.value,
     stateName: estadoObj.name,
     cityName: selectedCiudad.value,
-    deliveryDate: selectedFecha.value,
   })
 
   // Navigate to catalog with location params
@@ -77,6 +77,25 @@ function handleSubmit() {
 
 <template>
   <div class="mx-auto w-full max-w-4xl px-4">
+    <!-- Warning Toast -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-x-full opacity-0"
+      enter-to-class="translate-x-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-x-0 opacity-100"
+      leave-to-class="translate-x-full opacity-0"
+    >
+      <div
+        v-if="showWarning"
+        class="fixed right-4 top-4 z-50 max-w-sm rounded-lg bg-yellow-400 p-4 shadow-xl"
+      >
+        <p class="text-sm font-bold text-gray-900">
+          ¡Espera! ¿A dónde quieres enviar? Elige una ciudad y te mostraremos los regalos disponibles ahí
+        </p>
+      </div>
+    </Transition>
+
     <div class="rounded-2xl bg-white p-6 shadow-2xl md:p-8">
       <!-- Title -->
       <h2 class="mb-6 text-center text-2xl font-bold text-gray-900 md:text-3xl">
@@ -84,7 +103,7 @@ function handleSubmit() {
       </h2>
 
       <!-- Form -->
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <!-- Estado Select -->
         <div class="flex flex-col">
           <label for="estado" class="mb-2 text-sm font-semibold text-gray-700">
@@ -123,31 +142,16 @@ function handleSubmit() {
             </option>
           </select>
         </div>
-
-        <!-- Fecha Select -->
-        <div class="flex flex-col">
-          <label for="fecha" class="mb-2 text-sm font-semibold text-gray-700">
-            Fecha de entrega
-          </label>
-          <input
-            id="fecha"
-            v-model="selectedFecha"
-            type="date"
-            :min="minDate"
-            class="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 shadow-sm transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
-          />
-        </div>
       </div>
 
       <!-- Submit Button -->
       <div class="mt-6 text-center">
         <button
           type="button"
-          :disabled="!isFormValid"
-          class="w-full rounded-full bg-yellow-400 px-8 py-4 text-lg font-bold text-gray-900 shadow-lg transition-all hover:bg-yellow-300 active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 md:w-auto"
+          class="w-full rounded-full bg-yellow-400 px-8 py-4 text-lg font-bold text-gray-900 shadow-lg transition-all hover:bg-yellow-300 active:scale-95 md:w-auto"
           @click="handleSubmit"
         >
-          Ver juguetes disponibles
+          Ver juguetes
         </button>
       </div>
     </div>
