@@ -298,7 +298,7 @@ export interface CatalogQueryParams {
 export interface ProductImage {
   id: number
   url: string
-  alt: string | null
+  is_primary: boolean
   order: number
 }
 

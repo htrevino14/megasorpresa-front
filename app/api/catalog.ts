@@ -9,8 +9,8 @@ export const getCatalogProducts = (params?: CatalogQueryParams) =>
   api.get<PaginatedResponse<CatalogProduct>>('/catalog/products', { params })
 
 /**
- * Fetch a single product by its slug.
- * @param slug - The product slug.
+ * Fetch a single product by its numeric ID.
+ * @param id - The product ID.
  */
-export const getCatalogProduct = (slug: string) =>
-  api.get<{ data: ProductDetail }>(`/catalog/products/${slug}`)
+export const getCatalogProduct = (id: number) =>
+  api.get<{ data: ProductDetail }>(`/catalog/products/${id}`)

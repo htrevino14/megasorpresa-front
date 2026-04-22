@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * producto/[slug] – Product Detail Page (PDP).
+ * product/[id] – Product Detail Page (PDP).
  *
- * Fetches product data from GET /api/catalog/products/:slug and renders a
+ * Fetches product data from GET /api/catalog/products/:id and renders a
  * two-column layout: 60 % image gallery on the left, product info and
  * add-to-cart action on the right. Shares the full landing header and footer.
  */
@@ -12,11 +12,11 @@ import type { ProductDetail } from '@@/types/index'
 definePageMeta({ layout: 'landing' })
 
 const route = useRoute()
-const slug = computed<string>(() => route.params.slug as string)
+const id = computed<number>(() => Number(route.params.id))
 
 const { data: productData, status, error } = await useAsyncData<ProductDetail>(
-  `product-${slug.value}`,
-  () => getCatalogProduct(slug.value).then(r => r.data.data),
+  `product-${id.value}`,
+  () => getCatalogProduct(id.value).then(r => r.data.data),
 )
 
 const product = computed<ProductDetail | null>(() => productData.value ?? null)
@@ -72,7 +72,7 @@ useHead(
             </div>
           </div>
           <!-- Info skeleton -->
-          <div class="lg:col-span-2 flex flex-col gap-4">
+          <div class="flex flex-col gap-4 lg:col-span-2">
             <div class="h-5 w-1/3 animate-pulse rounded bg-gray-200" />
             <div class="h-8 w-3/4 animate-pulse rounded bg-gray-200" />
             <div class="h-10 w-1/2 animate-pulse rounded bg-gray-200" />
@@ -119,7 +119,7 @@ useHead(
 
           <!-- ── Right: Info + Actions (2/5 = 40 %) ─────────────────────── -->
           <!-- top-28 accounts for the sticky header (~7rem) with a small buffer -->
-          <div class="lg:col-span-2 lg:sticky lg:top-28 flex flex-col gap-6">
+          <div class="flex flex-col gap-6 lg:col-span-2 lg:sticky lg:top-28">
             <ProductProductInfo
               :name="product.name"
               :base-price="product.base_price"
@@ -136,7 +136,7 @@ useHead(
             />
 
             <!-- Trust badges -->
-            <div class="grid grid-cols-3 gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200 text-center text-xs text-gray-600">
+            <div class="grid grid-cols-3 gap-3 rounded-xl bg-white p-4 text-center text-xs text-gray-600 shadow-sm ring-1 ring-gray-200">
               <div class="flex flex-col items-center gap-1">
                 <svg class="h-5 w-5 text-[#0072E3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l-1 12h16L19 8M10 12v4m4-4v4" />

@@ -5,14 +5,19 @@
  * Renders a main image area with smooth slide transitions and a row of
  * clickable thumbnails below. Supports full-screen lightbox on click.
  *
- * @prop {string}        primaryImage  - Fallback image URL when images array is empty.
+ * The `primaryImage` prop may be null when the backend `show` endpoint does not
+ * eager-load the `primaryImage` relationship. In that case the component falls
+ * back to the image with `is_primary: true` inside the `images` array, or to
+ * the first image in the array if none is flagged as primary.
+ *
+ * @prop {string|null}   primaryImage  - Primary image URL (may be null from the detail endpoint).
  * @prop {ProductImage[]} images       - Ordered array of product images from the backend.
- * @prop {string}        productName   - Used as alt text fallback.
+ * @prop {string}        productName   - Used as alt text.
  */
 import type { ProductImage } from '@@/types/index'
 
 const props = defineProps<{
-  primaryImage: string
+  primaryImage: string | null
   images: ProductImage[]
   productName: string
 }>()
@@ -22,7 +27,20 @@ const allImages = computed<ProductImage[]>(() => {
   if (props.images && props.images.length > 0) {
     return [...props.images].sort((a, b) => a.order - b.order)
   }
-  return [{ id: 0, url: props.primaryImage, alt: props.productName, order: 0 }]
+  // Fall back to a synthetic entry using the primaryImage URL when the images
+  // array is empty (e.g. older data or loading error).
+  if (props.primaryImage) {
+    return [{ id: 0, url: props.primaryImage, is_primary: true, order: 0 }]
+  }
+  return []
+})
+
+// Derive the display URL for the active image, preferring is_primary=true if
+// primaryImage was not separately provided by the backend.
+const resolvedPrimaryUrl = computed<string>(() => {
+  if (props.primaryImage) return props.primaryImage
+  const primary = allImages.value.find(img => img.is_primary)
+  return primary?.url ?? allImages.value[0]?.url ?? ''
 })
 
 // ── Active index ──────────────────────────────────────────────────────────────
@@ -71,8 +89,15 @@ if (import.meta.client) {
 
 <template>
   <div class="flex flex-col gap-3">
+    <!-- ── No image placeholder ───────────────────────────────────────────── -->
+    <div v-if="allImages.length === 0" class="flex aspect-square w-full items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
+      <svg class="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    </div>
+
     <!-- ── Main image area ─────────────────────────────────────────────────── -->
-    <div class="relative overflow-hidden rounded-2xl bg-gray-100 shadow-sm">
+    <div v-else class="relative overflow-hidden rounded-2xl bg-gray-100 shadow-sm">
       <Transition
         :name="direction === 'next' ? 'slide-left' : 'slide-right'"
         mode="out-in"
@@ -80,7 +105,7 @@ if (import.meta.client) {
         <img
           :key="activeImage.url"
           :src="activeImage.url"
-          :alt="activeImage.alt ?? productName"
+          :alt="productName"
           class="aspect-square w-full cursor-zoom-in object-cover"
           @click="openLightbox"
         />
@@ -147,7 +172,7 @@ if (import.meta.client) {
       >
         <img
           :src="img.url"
-          :alt="img.alt ?? productName"
+          :alt="productName"
           class="h-full w-full object-cover"
           loading="lazy"
         />
@@ -204,7 +229,7 @@ if (import.meta.client) {
             <img
               :key="activeImage.url"
               :src="activeImage.url"
-              :alt="activeImage.alt ?? productName"
+              :alt="productName"
               class="max-h-[90vh] max-w-full rounded-lg object-contain shadow-2xl"
             />
           </Transition>
