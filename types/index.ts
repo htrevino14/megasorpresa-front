@@ -260,6 +260,26 @@ export interface ZipCodeState {
   isValidated: boolean
 }
 
+/** Location (Estado/Ciudad) for delivery coverage */
+export interface Location {
+  /** State code (e.g. 'NL', 'CDMX', 'JAL') */
+  stateCode: string
+  /** State name (e.g. 'Nuevo León') */
+  stateName: string
+  /** City name (e.g. 'Monterrey') */
+  cityName: string
+  /** Optional delivery date */
+  deliveryDate?: string
+}
+
+/** Location selector state */
+export interface LocationState {
+  /** Currently selected location */
+  selectedLocation: Location | null
+  /** Whether a location has been validated and selected */
+  isValidated: boolean
+}
+
 // ── Catalog Types ─────────────────────────────────────────────────────────────
 
 /** Minimal category attached to a catalog product */

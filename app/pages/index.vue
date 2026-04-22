@@ -16,6 +16,12 @@ definePageMeta({ layout: 'landing' })
 
     <main class="flex-1">
       <LandingHeroSection />
+
+      <!-- Location Selector Card - positioned right after hero -->
+      <section class="-mt-12 relative z-10 pb-12">
+        <HomeLocationSelector />
+      </section>
+
       <LandingExperienciaTotal />
       <LandingCategoryCarousel />
       <LandingAgeSelector />
