@@ -114,7 +114,7 @@ function validateRegConfirmation(): boolean {
 // ── Submit: login ─────────────────────────────────────────────────────────────
 async function handleLogin() {
   loginApiError.value = null
-  const valid = validateLoginEmail() & validateLoginPassword()
+  const valid = validateLoginEmail() && validateLoginPassword()
   if (!valid) return
 
   loginLoading.value = true
