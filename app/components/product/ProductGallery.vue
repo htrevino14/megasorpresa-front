@@ -35,19 +35,12 @@ const allImages = computed<ProductImage[]>(() => {
   return []
 })
 
-// Derive the display URL for the active image, preferring is_primary=true if
-// primaryImage was not separately provided by the backend.
-const resolvedPrimaryUrl = computed<string>(() => {
-  if (props.primaryImage) return props.primaryImage
-  const primary = allImages.value.find(img => img.is_primary)
-  return primary?.url ?? allImages.value[0]?.url ?? ''
-})
-
-// ── Active index ──────────────────────────────────────────────────────────────
-const activeIndex = ref(0)
+// ── Active index — start on the primary image ─────────────────────────────────
+const initialIndex = allImages.value.findIndex(img => img.is_primary)
+const activeIndex = ref(initialIndex >= 0 ? initialIndex : 0)
 const direction = ref<'next' | 'prev'>('next')
 
-const activeImage = computed<ProductImage>(() => allImages.value[activeIndex.value])
+const activeImage = computed<ProductImage | undefined>(() => allImages.value[activeIndex.value])
 
 function goTo(index: number) {
   direction.value = index > activeIndex.value ? 'next' : 'prev'
@@ -103,8 +96,8 @@ if (import.meta.client) {
         mode="out-in"
       >
         <img
-          :key="activeImage.url"
-          :src="activeImage.url"
+          :key="activeImage?.url"
+          :src="activeImage?.url"
           :alt="productName"
           class="aspect-square w-full cursor-zoom-in object-cover"
           @click="openLightbox"
@@ -227,8 +220,8 @@ if (import.meta.client) {
           <!-- Full image -->
           <Transition :name="direction === 'next' ? 'slide-left' : 'slide-right'" mode="out-in">
             <img
-              :key="activeImage.url"
-              :src="activeImage.url"
+              :key="activeImage?.url"
+              :src="activeImage?.url"
               :alt="productName"
               class="max-h-[90vh] max-w-full rounded-lg object-contain shadow-2xl"
             />
