@@ -24,6 +24,7 @@ const isLoading = computed(() => status.value === 'pending')
 
 // ── Cart state (placeholder – replace with useCartStore when available) ────────
 const isAddingToCart = ref(false)
+const selectedWrappingId = ref<number | null>(null)
 
 async function handleAddToCart(quantity: number) {
   if (!product.value) return
@@ -31,7 +32,7 @@ async function handleAddToCart(quantity: number) {
   try {
     // TODO: integrate with useCartStore once it exists
     await new Promise<void>(resolve => setTimeout(resolve, 800))
-    console.log('Added to cart:', product.value.id, 'qty:', quantity)
+    console.log('Added to cart:', product.value.id, 'qty:', quantity, 'wrapping:', selectedWrappingId.value)
   }
   finally {
     isAddingToCart.value = false
@@ -127,6 +128,9 @@ useHead(
               :categories="product.categories"
               :stock-quantity="product.stock_quantity"
             />
+
+            <!-- Gift Wrapping Selector -->
+            <CheckoutWrapperSelector v-model="selectedWrappingId" />
 
             <ProductAddToCartAction
               :stock-quantity="product.stock_quantity"
