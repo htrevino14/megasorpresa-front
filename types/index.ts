@@ -337,3 +337,13 @@ export interface ProductDetail {
   stock_quantity: number
   categories: CatalogCategory[]
 }
+
+// ── Checkout Types ────────────────────────────────────────────────────────────
+
+/** Gift wrapping option for checkout */
+export interface WrappingOption {
+  id: number
+  name: string
+  hex: string
+  texture_url: string
+}
