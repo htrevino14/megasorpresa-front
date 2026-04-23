@@ -53,52 +53,32 @@ function debouncedUpdate() {
   if (debounceTimer) clearTimeout(debounceTimer)
 
   debounceTimer = setTimeout(() => {
-    emit('update:quantity', props.item.product_id, quantity.value)
+    emit('update:quantity', props.item.product.id, quantity.value)
     pendingUpdate.value = false
   }, 600)
 }
 
 function handleRemove() {
   if (!props.disabled) {
-    emit('remove', props.item.product_id)
+    emit('remove', props.item.product.id)
   }
 }
 </script>
 
 <template>
   <div class="card flex flex-col gap-4 sm:flex-row sm:items-center">
-    <!-- Product image -->
-    <NuxtLink
-      :to="`/product/${item.product_id}`"
-      class="flex-shrink-0"
-    >
-      <img
-        :src="item.product_image"
-        :alt="item.product_name"
-        class="h-24 w-24 rounded-lg object-cover transition-transform hover:scale-105"
-      />
-    </NuxtLink>
-
     <!-- Product info -->
     <div class="flex flex-1 flex-col gap-1">
       <NuxtLink
-        :to="`/product/${item.product_id}`"
+        :to="`/product/${item.product.id}`"
         class="text-base font-semibold text-gray-900 hover:text-[#0072E3]"
       >
-        {{ item.product_name }}
+        {{ item.product.name }}
       </NuxtLink>
-      <p class="text-xs text-gray-500">SKU: {{ item.product_id }}</p>
+      <p class="text-xs text-gray-500">SKU: {{ item.product.id }}</p>
       <p class="text-sm font-bold text-gray-900">
-        {{ formatPrice(item.product_price) }}
+        {{ formatPrice(item.price_at_addition) }}
       </p>
-
-      <!-- Wrapping option badge -->
-      <div v-if="item.wrapping_option_name" class="mt-1 flex items-center gap-1 text-xs text-gray-600">
-        <svg class="h-4 w-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-        </svg>
-        <span>Envoltura: {{ item.wrapping_option_name }}</span>
-      </div>
     </div>
 
     <!-- Quantity controls -->

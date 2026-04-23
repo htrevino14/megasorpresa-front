@@ -49,30 +49,25 @@ export const useCartStore = defineStore('cart', {
   state: (): CartState => ({
     items: [],
     subtotal: 0,
-    shipping_cost: 0,
-    total: 0,
-    item_count: 0,
+    total_items: 0,
     isLoading: false,
   }),
 
   getters: {
     /** Returns true if the cart has items. */
-    hasItems: (state): boolean => state.item_count > 0,
+    hasItems: (state): boolean => state.total_items > 0,
 
     /** Returns the total number of items in the cart. */
-    totalItems: (state): number => state.item_count,
+    totalItems: (state): number => state.total_items,
 
     /** Returns the cart items array. */
     cartItems: (state): CartItem[] => state.items,
 
-    /** Returns the subtotal before shipping. */
+    /** Returns the subtotal. */
     cartSubtotal: (state): number => state.subtotal,
 
-    /** Returns the shipping cost. */
-    cartShipping: (state): number => state.shipping_cost,
-
-    /** Returns the grand total. */
-    cartTotal: (state): number => state.total,
+    /** Returns the grand total (same as subtotal for now). */
+    cartTotal: (state): number => state.subtotal,
   },
 
   actions: {
@@ -87,9 +82,7 @@ export const useCartStore = defineStore('cart', {
           const parsed = JSON.parse(saved)
           this.items = parsed.items ?? []
           this.subtotal = parsed.subtotal ?? 0
-          this.shipping_cost = parsed.shipping_cost ?? 0
-          this.total = parsed.total ?? 0
-          this.item_count = parsed.item_count ?? 0
+          this.total_items = parsed.total_items ?? 0
         } catch {
           // Invalid JSON, clear it
           safeRemoveItem(STORAGE_KEY)
@@ -104,9 +97,7 @@ export const useCartStore = defineStore('cart', {
       const state = {
         items: this.items,
         subtotal: this.subtotal,
-        shipping_cost: this.shipping_cost,
-        total: this.total,
-        item_count: this.item_count,
+        total_items: this.total_items,
       }
       safeSetItem(STORAGE_KEY, JSON.stringify(state))
     },
@@ -122,9 +113,7 @@ export const useCartStore = defineStore('cart', {
 
         this.items = cart.items
         this.subtotal = cart.subtotal
-        this.shipping_cost = cart.shipping_cost
-        this.total = cart.total
-        this.item_count = cart.item_count
+        this.total_items = cart.total_items
 
         this.persistCart()
       } catch (error) {
@@ -152,9 +141,7 @@ export const useCartStore = defineStore('cart', {
 
         this.items = cart.items
         this.subtotal = cart.subtotal
-        this.shipping_cost = cart.shipping_cost
-        this.total = cart.total
-        this.item_count = cart.item_count
+        this.total_items = cart.total_items
 
         this.persistCart()
       } catch (error) {
@@ -178,9 +165,7 @@ export const useCartStore = defineStore('cart', {
 
         this.items = cart.items
         this.subtotal = cart.subtotal
-        this.shipping_cost = cart.shipping_cost
-        this.total = cart.total
-        this.item_count = cart.item_count
+        this.total_items = cart.total_items
 
         this.persistCart()
       } catch (error) {
@@ -203,9 +188,7 @@ export const useCartStore = defineStore('cart', {
 
         this.items = cart.items
         this.subtotal = cart.subtotal
-        this.shipping_cost = cart.shipping_cost
-        this.total = cart.total
-        this.item_count = cart.item_count
+        this.total_items = cart.total_items
 
         this.persistCart()
       } catch (error) {
@@ -220,9 +203,7 @@ export const useCartStore = defineStore('cart', {
     clearCart(): void {
       this.items = []
       this.subtotal = 0
-      this.shipping_cost = 0
-      this.total = 0
-      this.item_count = 0
+      this.total_items = 0
       safeRemoveItem(STORAGE_KEY)
     },
   },

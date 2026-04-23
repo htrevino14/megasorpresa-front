@@ -2,20 +2,16 @@
 /**
  * CartSummary – Order summary sidebar with totals and delivery info.
  *
- * Displays subtotal, shipping cost, total, selected location and delivery date.
+ * Displays subtotal and total, selected location and delivery date.
  * Sticky positioned on desktop for easy access during scroll.
  *
- * @prop {number} subtotal - Cart subtotal before shipping.
- * @prop {number} shippingCost - Shipping cost.
- * @prop {number} total - Grand total.
+ * @prop {number} subtotal - Cart subtotal.
  * @prop {boolean} disabled - Whether to disable the checkout button.
  */
 import { formatPrice } from '~/utils/index'
 
 defineProps<{
   subtotal: number
-  shippingCost: number
-  total: number
   disabled?: boolean
 }>()
 
@@ -50,24 +46,10 @@ const location = useLocationStore()
       </div>
     </div>
 
-    <!-- Price breakdown -->
-    <div class="space-y-2 border-t border-gray-200 pt-4">
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-gray-600">Subtotal</span>
-        <span class="font-semibold text-gray-900">{{ formatPrice(subtotal) }}</span>
-      </div>
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-gray-600">Envío</span>
-        <span class="font-semibold text-gray-900">
-          {{ shippingCost > 0 ? formatPrice(shippingCost) : 'Gratis' }}
-        </span>
-      </div>
-    </div>
-
     <!-- Total -->
     <div class="flex items-center justify-between border-t border-gray-200 pt-4">
       <span class="text-lg font-bold text-gray-900">Total</span>
-      <span class="text-2xl font-bold text-gray-900">{{ formatPrice(total) }}</span>
+      <span class="text-2xl font-bold text-gray-900">{{ formatPrice(subtotal) }}</span>
     </div>
 
     <!-- Checkout button -->

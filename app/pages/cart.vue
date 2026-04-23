@@ -121,8 +121,6 @@ useHead({
           <div class="lg:col-span-1">
             <CartCartSummary
               :subtotal="cart.cartSubtotal"
-              :shipping-cost="cart.cartShipping"
-              :total="cart.cartTotal"
               :disabled="cart.isLoading || !cart.hasItems"
             />
           </div>
