@@ -42,18 +42,34 @@ export interface User {
   updated_at: string
 }
 
-/** Cart line item */
+/** Cart line item as returned by the backend */
 export interface CartItem {
-  product: Product
+  id: number
+  product: {
+    id: number
+    name: string
+    base_price: number
+  }
   quantity: number
+  price_at_addition: number
   subtotal: number
 }
 
-/** Shopping cart */
+/** Shopping cart response from backend */
 export interface Cart {
+  id: number
+  session_id?: string
   items: CartItem[]
-  total: number
-  item_count: number
+  subtotal: number
+  total_items: number
+}
+
+/** Cart store state */
+export interface CartState {
+  items: CartItem[]
+  subtotal: number
+  total_items: number
+  isLoading: boolean
 }
 
 /** Order line item */

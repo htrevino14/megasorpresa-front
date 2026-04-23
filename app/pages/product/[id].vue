@@ -22,7 +22,8 @@ const { data: productData, status, error } = await useAsyncData<ProductDetail>(
 const product = computed<ProductDetail | null>(() => productData.value ?? null)
 const isLoading = computed(() => status.value === 'pending')
 
-// ── Cart state (placeholder – replace with useCartStore when available) ────────
+// ── Cart integration ───────────────────────────────────────────────────────────
+const cart = useCartStore()
 const isAddingToCart = ref(false)
 const selectedWrappingId = ref<number | null>(null)
 
@@ -30,11 +31,13 @@ async function handleAddToCart(quantity: number) {
   if (!product.value) return
   isAddingToCart.value = true
   try {
-    // TODO: integrate with useCartStore once it exists
-    await new Promise<void>(resolve => setTimeout(resolve, 800))
+    await cart.addItem(product.value.id, quantity, selectedWrappingId.value)
+    // Success! Could show a toast notification here
     console.log('Added to cart:', product.value.id, 'qty:', quantity, 'wrapping:', selectedWrappingId.value)
-  }
-  finally {
+  } catch (error) {
+    console.error('Failed to add to cart:', error)
+    // TODO: Show error notification to user
+  } finally {
     isAddingToCart.value = false
   }
 }
@@ -42,8 +45,7 @@ async function handleAddToCart(quantity: number) {
 async function handleBuyNow(quantity: number) {
   if (!product.value) return
   await handleAddToCart(quantity)
-  // TODO: navigate to checkout once the route exists
-  await navigateTo('/checkout')
+  await navigateTo('/cart')
 }
 
 // ── SEO ───────────────────────────────────────────────────────────────────────

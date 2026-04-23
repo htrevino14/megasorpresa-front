@@ -12,9 +12,11 @@ import { getAnnouncementBar, getMegamenu } from '~/api/landing'
 import type { AnnouncementBar, MegamenuCategory } from '@@/types/index'
 import { useAuthStore } from '~/stores/auth'
 import { useAuthModalStore } from '~/stores/authModal'
+import { useCartStore } from '~/stores/cart'
 
 const auth = useAuthStore()
 const authModal = useAuthModalStore()
+const cart = useCartStore()
 
 async function handleLogout() {
   await auth.logout()
@@ -115,6 +117,23 @@ function toSlug(text: string): string {
           </span>
         </NuxtLink>
 
+        <!-- Mobile cart icon -->
+        <NuxtLink
+          to="/cart"
+          class="relative shrink-0 text-white md:hidden"
+          aria-label="Ver carrito"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <span
+            v-if="cart.totalItems > 0"
+            class="absolute -right-2 -top-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white"
+          >
+            {{ cart.totalItems > 99 ? '99+' : cart.totalItems }}
+          </span>
+        </NuxtLink>
+
         <!-- User action icons (desktop) -->
         <div class="hidden items-center gap-5 md:flex">
           <template v-if="auth.isAuthenticated">
@@ -156,11 +175,18 @@ function toSlug(text: string): string {
 
           <NuxtLink
             to="/cart"
-            class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
+            class="relative flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
           >
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
+            <!-- Cart counter badge -->
+            <span
+              v-if="cart.totalItems > 0"
+              class="absolute -right-2 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white"
+            >
+              {{ cart.totalItems > 99 ? '99+' : cart.totalItems }}
+            </span>
             <span class="text-xs">Carrito</span>
           </NuxtLink>
         </div>
@@ -356,7 +382,15 @@ function toSlug(text: string): string {
             <button class="block w-full text-left hover:text-[#0072E3]" @click="toggleMobileMenu(); authModal.open('login')">Iniciar sesión</button>
             <button class="block w-full text-left hover:text-[#0072E3]" @click="toggleMobileMenu(); authModal.open('register')">Crear cuenta</button>
           </template>
-          <NuxtLink to="/cart" class="block hover:text-[#0072E3]" @click="toggleMobileMenu">Carrito</NuxtLink>
+          <NuxtLink to="/cart" class="flex items-center justify-between hover:text-[#0072E3]" @click="toggleMobileMenu">
+            <span>Carrito</span>
+            <span
+              v-if="cart.totalItems > 0"
+              class="ml-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white"
+            >
+              {{ cart.totalItems > 99 ? '99+' : cart.totalItems }}
+            </span>
+          </NuxtLink>
         </div>
       </nav>
     </div>
