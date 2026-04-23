@@ -15,6 +15,7 @@
 import { defineStore } from 'pinia'
 import type { CartState, CartItem } from '@@/types/index'
 import { getCart, addToCart, updateCartQuantity, removeFromCart } from '~/api/cart'
+import { initCsrfToken } from '~/api/index'
 
 const STORAGE_KEY = 'cart_state'
 
@@ -136,6 +137,10 @@ export const useCartStore = defineStore('cart', {
     ): Promise<void> {
       try {
         this.isLoading = true
+
+        // Initialize CSRF token before state-changing request
+        await initCsrfToken()
+
         const response = await addToCart(productId, quantity, wrappingOptionId)
         const cart = response.data.data
 
@@ -160,6 +165,10 @@ export const useCartStore = defineStore('cart', {
     async updateQuantity(productId: number, quantity: number): Promise<void> {
       try {
         this.isLoading = true
+
+        // Initialize CSRF token before state-changing request
+        await initCsrfToken()
+
         const response = await updateCartQuantity(productId, quantity)
         const cart = response.data.data
 
@@ -183,6 +192,10 @@ export const useCartStore = defineStore('cart', {
     async removeItem(productId: number): Promise<void> {
       try {
         this.isLoading = true
+
+        // Initialize CSRF token before state-changing request
+        await initCsrfToken()
+
         const response = await removeFromCart(productId)
         const cart = response.data.data
 
