@@ -77,10 +77,18 @@ const meta = computed(() => catalogData.value?.meta)
 const links = computed(() => catalogData.value?.links)
 const isLoading = computed(() => status.value === 'pending')
 
-// ── Cart (placeholder – replace with cart store when available) ───────────────
-function addToCart(product: CatalogProduct) {
-  // TODO: integrate with useCartStore once it exists
-  console.log('Added to cart:', product.id)
+// ── Cart integration ──────────────────────────────────────────────────────────
+const cart = useCartStore()
+
+async function addToCart(product: CatalogProduct) {
+  try {
+    await cart.addItem(product.id, 1)
+    console.log('Added to cart:', product.id)
+    // TODO: Show success notification to user
+  } catch (error) {
+    console.error('Failed to add to cart:', error)
+    // TODO: Show error notification to user
+  }
 }
 </script>
 

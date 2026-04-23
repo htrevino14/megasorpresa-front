@@ -42,18 +42,37 @@ export interface User {
   updated_at: string
 }
 
-/** Cart line item */
+/** Cart line item as returned by the backend */
 export interface CartItem {
-  product: Product
+  id: number
+  product_id: number
+  product_name: string
+  product_slug: string
+  product_image: string
+  product_price: number
   quantity: number
   subtotal: number
+  wrapping_option_id?: number | null
+  wrapping_option_name?: string | null
 }
 
-/** Shopping cart */
+/** Shopping cart response from backend */
 export interface Cart {
   items: CartItem[]
+  subtotal: number
+  shipping_cost: number
   total: number
   item_count: number
+}
+
+/** Cart store state */
+export interface CartState {
+  items: CartItem[]
+  subtotal: number
+  shipping_cost: number
+  total: number
+  item_count: number
+  isLoading: boolean
 }
 
 /** Order line item */
