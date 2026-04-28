@@ -2,49 +2,19 @@
  * Shopping cart Pinia store.
  *
  * Manages the user's shopping cart state and provides actions to add, update,
- * and remove items. The cart is synchronized with the backend API and persisted
- * in localStorage for continuity across page reloads.
+ * and remove items. The cart is synchronized with the backend API which serves
+ * as the single source of truth.
  *
  * @remarks
- * - The cart state is persisted in localStorage under the key `cart_state`.
- * - Call `restoreCart()` from a client-only plugin to rehydrate state
- *   safely without SSR mismatches.
- * - All localStorage access is guarded by `import.meta.client` to prevent
- *   SSR errors and wrapped in try-catch to handle exceptions.
+ * - The backend (Laravel Sanctum) manages cart persistence via session cookies.
+ * - Call `fetchCart()` from a client-only plugin to hydrate state on app load.
+ * - All mutation actions automatically sync with the backend after each change.
+ * - Do NOT use localStorage for cart items as the backend is the source of truth.
  */
 import { defineStore } from 'pinia'
 import type { CartState, CartItem } from '@@/types/index'
 import { getCart, addToCart, updateCartQuantity, removeFromCart } from '~/api/cart'
 import { initCsrfToken } from '~/api/index'
-
-const STORAGE_KEY = 'cart_state'
-
-function safeGetItem(key: string): string | null {
-  if (!import.meta.client) return null
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function safeSetItem(key: string, value: string): void {
-  if (!import.meta.client) return
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    // Silently ignore quota or security errors
-  }
-}
-
-function safeRemoveItem(key: string): void {
-  if (!import.meta.client) return
-  try {
-    localStorage.removeItem(key)
-  } catch {
-    // Silently ignore security errors
-  }
-}
 
 export const useCartStore = defineStore('cart', {
   state: (): CartState => ({
@@ -73,38 +43,8 @@ export const useCartStore = defineStore('cart', {
 
   actions: {
     /**
-     * Restore the cart state from localStorage.
-     * Call this once on the client to avoid SSR hydration mismatches.
-     */
-    restoreCart(): void {
-      const saved = safeGetItem(STORAGE_KEY)
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          this.items = parsed.items ?? []
-          this.subtotal = parsed.subtotal ?? 0
-          this.total_items = parsed.total_items ?? 0
-        } catch {
-          // Invalid JSON, clear it
-          safeRemoveItem(STORAGE_KEY)
-        }
-      }
-    },
-
-    /**
-     * Persist the current cart state to localStorage.
-     */
-    persistCart(): void {
-      const state = {
-        items: this.items,
-        subtotal: this.subtotal,
-        total_items: this.total_items,
-      }
-      safeSetItem(STORAGE_KEY, JSON.stringify(state))
-    },
-
-    /**
      * Fetch the cart from the backend and update the local state.
+     * This is the primary method to synchronize cart state with the backend.
      */
     async fetchCart(): Promise<void> {
       try {
@@ -115,10 +55,12 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
-
-        this.persistCart()
       } catch (error) {
         console.error('Failed to fetch cart:', error)
+        // On error, reset to empty state to avoid stale data
+        this.items = []
+        this.subtotal = 0
+        this.total_items = 0
       } finally {
         this.isLoading = false
       }
@@ -147,8 +89,6 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
-
-        this.persistCart()
       } catch (error) {
         console.error('Failed to add item to cart:', error)
         throw error
@@ -175,8 +115,6 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
-
-        this.persistCart()
       } catch (error) {
         console.error('Failed to update cart quantity:', error)
         throw error
@@ -202,8 +140,6 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
-
-        this.persistCart()
       } catch (error) {
         console.error('Failed to remove item from cart:', error)
         throw error
@@ -212,12 +148,11 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    /** Clear the cart state. */
+    /** Clear the cart state (local only, does not sync with backend). */
     clearCart(): void {
       this.items = []
       this.subtotal = 0
       this.total_items = 0
-      safeRemoveItem(STORAGE_KEY)
     },
   },
 })

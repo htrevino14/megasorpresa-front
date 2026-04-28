@@ -1,17 +1,15 @@
 /**
- * Cart restoration plugin.
+ * Cart initialization plugin.
  *
- * Restores the cart state from localStorage on client-side mount,
- * then fetches the latest state from the backend to ensure synchronization.
+ * Fetches the cart state from the backend on client-side mount.
+ * The backend (Laravel Sanctum) serves as the single source of truth,
+ * managing cart persistence via session cookies.
  */
 export default defineNuxtPlugin(() => {
   const cart = useCartStore()
 
-  // Restore from localStorage first for immediate UI update
-  cart.restoreCart()
-
-  // Then fetch from backend to ensure sync
-  // Only if we're on the client side
+  // Fetch cart from backend on app initialization
+  // The backend identifies the user via session cookies (withCredentials: true)
   if (import.meta.client) {
     cart.fetchCart()
   }
