@@ -22,6 +22,7 @@ export const useCartStore = defineStore('cart', {
     subtotal: 0,
     total_items: 0,
     isLoading: false,
+    isInitialized: false,
   }),
 
   getters: {
@@ -39,6 +40,9 @@ export const useCartStore = defineStore('cart', {
 
     /** Returns the grand total (same as subtotal for now). */
     cartTotal: (state): number => state.subtotal,
+
+    /** Returns true if the cart has been initialized from the backend. */
+    isInitialized: (state): boolean => state.isInitialized,
   },
 
   actions: {
@@ -55,6 +59,7 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
+        this.isInitialized = true
       } catch (error) {
         console.error('Failed to fetch cart:', error)
         // Keep existing state on error to avoid losing cart during network issues.
@@ -65,6 +70,8 @@ export const useCartStore = defineStore('cart', {
           this.subtotal = 0
           this.total_items = 0
         }
+        // Mark as initialized even on error to prevent retry loops
+        this.isInitialized = true
         // Otherwise, keep the existing cart state to handle temporary network issues
       } finally {
         this.isLoading = false
@@ -158,6 +165,7 @@ export const useCartStore = defineStore('cart', {
       this.items = []
       this.subtotal = 0
       this.total_items = 0
+      this.isInitialized = false
     },
   },
 })

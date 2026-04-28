@@ -70,6 +70,7 @@ export interface CartState {
   subtotal: number
   total_items: number
   isLoading: boolean
+  isInitialized: boolean
 }
 
 /** Order line item */
