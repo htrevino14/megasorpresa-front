@@ -57,10 +57,15 @@ export const useCartStore = defineStore('cart', {
         this.total_items = cart.total_items
       } catch (error) {
         console.error('Failed to fetch cart:', error)
-        // On error, reset to empty state to avoid stale data
-        this.items = []
-        this.subtotal = 0
-        this.total_items = 0
+        // Keep existing state on error to avoid losing cart during network issues.
+        // Only reset if this is the initial fetch (empty cart)
+        if (this.items.length === 0) {
+          // Initial fetch failed, ensure clean state
+          this.items = []
+          this.subtotal = 0
+          this.total_items = 0
+        }
+        // Otherwise, keep the existing cart state to handle temporary network issues
       } finally {
         this.isLoading = false
       }
