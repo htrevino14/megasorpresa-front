@@ -155,11 +155,19 @@ export const useCartStore = defineStore('cart', {
       try {
         this.isLoading = true
 
+        if (import.meta.dev) {
+          console.log('[Cart] Adding item - Product ID:', productId, 'Quantity:', quantity)
+        }
+
         // Initialize CSRF token before state-changing request
         await initCsrfToken()
 
         const response = await addToCart(productId, quantity, wrappingOptionId)
         const cart = response.data.data
+
+        if (import.meta.dev) {
+          console.log('[Cart] Response received - Cart ID:', cart.id, 'Total items:', cart.total_items)
+        }
 
         this.items = cart.items
         this.subtotal = cart.subtotal

@@ -30,6 +30,13 @@ function hasXsrfToken(): boolean {
       return trimmed.includes('_session=') || trimmed.startsWith('laravel_session=')
     })
 
+    // Debug logging to help troubleshoot
+    if (import.meta.dev) {
+      console.log('[CSRF Check] XSRF-TOKEN exists:', hasXsrf)
+      console.log('[CSRF Check] Session cookie exists:', hasSession)
+      console.log('[CSRF Check] All cookies:', document.cookie)
+    }
+
     // Both cookies must exist for a valid session
     return hasXsrf && hasSession
   } catch {
@@ -55,7 +62,14 @@ export async function initCsrfToken(): Promise<void> {
 
   // Skip if CSRF token already exists - this prevents creating new sessions
   if (hasXsrfToken()) {
+    if (import.meta.dev) {
+      console.log('[CSRF Init] Skipping - valid session already exists')
+    }
     return
+  }
+
+  if (import.meta.dev) {
+    console.log('[CSRF Init] No valid session found - initializing new session')
   }
 
   try {
@@ -64,6 +78,11 @@ export async function initCsrfToken(): Promise<void> {
     await axios.get(`${baseURL}/sanctum/csrf-cookie`, {
       withCredentials: true,
     })
+
+    if (import.meta.dev) {
+      console.log('[CSRF Init] Session initialized successfully')
+      console.log('[CSRF Init] Cookies after init:', document.cookie)
+    }
   } catch (error) {
     // Log error but don't throw - allow the actual request to fail with more context
     console.warn('Failed to initialize CSRF token:', error)
