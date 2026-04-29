@@ -21,7 +21,17 @@ function hasXsrfToken(): boolean {
   try {
     // Check if XSRF-TOKEN cookie exists
     const cookies = document.cookie.split(';')
-    return cookies.some(cookie => cookie.trim().startsWith('XSRF-TOKEN='))
+    const hasXsrf = cookies.some(cookie => cookie.trim().startsWith('XSRF-TOKEN='))
+
+    // Also check for Laravel session cookie
+    // Session cookie name varies: megasorpresa_session, laravel_session, etc.
+    const hasSession = cookies.some(cookie => {
+      const trimmed = cookie.trim()
+      return trimmed.includes('_session=') || trimmed.startsWith('laravel_session=')
+    })
+
+    // Both cookies must exist for a valid session
+    return hasXsrf && hasSession
   } catch {
     return false
   }
