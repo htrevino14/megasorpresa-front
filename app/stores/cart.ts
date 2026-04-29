@@ -18,6 +18,7 @@ import { getCart, addToCart, updateCartQuantity, removeFromCart } from '~/api/ca
 import { initCsrfToken } from '~/api/index'
 
 const STORAGE_KEY = 'cart_state'
+const INITIALIZED_KEY = 'cart_initialized'
 
 function safeGetItem(key: string): string | null {
   if (!import.meta.client) return null
@@ -90,6 +91,12 @@ export const useCartStore = defineStore('cart', {
           safeRemoveItem(STORAGE_KEY)
         }
       }
+
+      // Restore the isInitialized flag from localStorage
+      const initialized = safeGetItem(INITIALIZED_KEY)
+      if (initialized === 'true') {
+        this.isInitialized = true
+      }
     },
 
     /**
@@ -125,6 +132,8 @@ export const useCartStore = defineStore('cart', {
 
         this.persistCart()
         this.isInitialized = true
+        // Persist the initialized flag to localStorage
+        safeSetItem(INITIALIZED_KEY, 'true')
       } catch (error) {
         console.error('Failed to fetch cart:', error)
       } finally {
@@ -227,6 +236,7 @@ export const useCartStore = defineStore('cart', {
       this.total_items = 0
       this.isInitialized = false
       safeRemoveItem(STORAGE_KEY)
+      safeRemoveItem(INITIALIZED_KEY)
     },
   },
 })
