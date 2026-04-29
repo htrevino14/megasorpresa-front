@@ -13,6 +13,9 @@ const api = axios.create({
  * Check if CSRF token cookie exists.
  * Laravel Sanctum stores the CSRF token in an XSRF-TOKEN cookie.
  *
+ * NOTE: If Laravel sets XSRF-TOKEN with HttpOnly=true, this check will fail!
+ * The XSRF-TOKEN cookie MUST be accessible to JavaScript (HttpOnly=false).
+ *
  * @returns True if XSRF-TOKEN cookie exists, false otherwise.
  */
 function hasXsrfToken(): boolean {
@@ -35,6 +38,13 @@ function hasXsrfToken(): boolean {
       console.log('[CSRF Check] XSRF-TOKEN exists:', hasXsrf)
       console.log('[CSRF Check] Session cookie exists:', hasSession)
       console.log('[CSRF Check] All cookies:', document.cookie)
+
+      // Additional check: warn if session exists but XSRF doesn't
+      if (hasSession && !hasXsrf) {
+        console.warn('[CSRF Check] ⚠️ WARNING: Session cookie exists but XSRF-TOKEN is missing!')
+        console.warn('[CSRF Check] This might mean XSRF-TOKEN is set with HttpOnly=true (should be false)')
+        console.warn('[CSRF Check] Check Laravel backend cookie configuration')
+      }
     }
 
     // Both cookies must exist for a valid session
