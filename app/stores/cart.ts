@@ -15,7 +15,6 @@
 import { defineStore } from 'pinia'
 import type { CartState, CartItem } from '@@/types/index'
 import { getCart, addToCart, updateCartQuantity, removeFromCart } from '~/api/cart'
-import { initCsrfToken } from '~/api/index'
 
 const STORAGE_KEY = 'cart_state'
 const INITIALIZED_KEY = 'cart_initialized'
@@ -157,16 +156,15 @@ export const useCartStore = defineStore('cart', {
 
         if (import.meta.dev) {
           console.log('[Cart] Adding item - Product ID:', productId, 'Quantity:', quantity)
+          console.log('[Cart] Current cookies before add:', document.cookie)
         }
-
-        // Initialize CSRF token before state-changing request
-        await initCsrfToken()
 
         const response = await addToCart(productId, quantity, wrappingOptionId)
         const cart = response.data.data
 
         if (import.meta.dev) {
           console.log('[Cart] Response received - Cart ID:', cart.id, 'Total items:', cart.total_items)
+          console.log('[Cart] Cookies after add:', document.cookie)
         }
 
         this.items = cart.items
@@ -191,9 +189,6 @@ export const useCartStore = defineStore('cart', {
       try {
         this.isLoading = true
 
-        // Initialize CSRF token before state-changing request
-        await initCsrfToken()
-
         const response = await updateCartQuantity(productId, quantity)
         const cart = response.data.data
 
@@ -217,9 +212,6 @@ export const useCartStore = defineStore('cart', {
     async removeItem(productId: number): Promise<void> {
       try {
         this.isLoading = true
-
-        // Initialize CSRF token before state-changing request
-        await initCsrfToken()
 
         const response = await removeFromCart(productId)
         const cart = response.data.data

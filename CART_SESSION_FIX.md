@@ -2,11 +2,11 @@
 
 ## Problem Description
 
-The frontend was generating multiple cart records in the database every time a user navigated to pages like `/catalog`, causing confusion and data duplication. The browser's session cookie remained constant, but the backend was creating new cart entries.
+The frontend was generating multiple cart records in the database every time a user added products to the cart. The browser's session cookie remained constant, but the backend was creating new cart entries with different `session_id` values.
 
 ## Root Causes
 
-This issue had **two distinct causes** that were both addressed:
+This issue had **three distinct causes** that were all addressed:
 
 ### Cause 1: CSRF Token Module-Level Variable
 
@@ -159,24 +159,31 @@ export const useCartStore = defineStore('cart', {
 ## How It Works
 
 ### First Page Load (Initial Session Establishment)
-1. **User visits site** → Cart plugin runs
-2. **CSRF token check** → `hasXsrfToken()` returns `false` (no cookie yet)
-3. **Initialize CSRF** → Calls `/sanctum/csrf-cookie` → Backend creates session and sets cookies
-4. **Fetch cart** → `fetchCart()` called for first time → `isInitialized = true`
-5. **Result**: Single session established, single cart record in database
+1. **User visits site** → Cart plugin runs (`cart.client.ts`)
+2. **Restore from localStorage** → `restoreCart()` loads cached cart data for immediate UI
+3. **CSRF token check** → `hasXsrfToken()` returns `false` (no cookie yet)
+4. **Initialize CSRF** → Calls `/sanctum/csrf-cookie` → Backend creates session and sets cookies (`XSRF-TOKEN` and `megasorpresa_session`)
+5. **Fetch cart** → `fetchCart()` called for first time → `isInitialized = true` persisted to localStorage
+6. **Result**: Single session established, single cart record in database
 
 ### Subsequent Page Navigation (e.g., to /catalog)
 1. **User navigates to `/catalog`** → Cart plugin runs again
-2. **CSRF token check** → `hasXsrfToken()` returns `true` (cookie exists) → Skip `/sanctum/csrf-cookie`
-3. **Fetch cart check** → `isInitialized = true` → Skip `fetchCart()`
-4. **Result**: No new session created, no new cart record, same cart persists
+2. **Restore from localStorage** → Cart data loaded, including `isInitialized = true`
+3. **CSRF token check** → `hasXsrfToken()` returns `true` (both cookies exist) → Skip `/sanctum/csrf-cookie`
+4. **Fetch cart check** → `isInitialized = true` → Skip `fetchCart()`
+5. **Result**: No new session created, no new cart record, same cart persists
 
-### Adding Products to Cart
+### Adding Products to Cart ⚠️ **CRITICAL FLOW**
 1. **User clicks "Agregar al carrito"** → `cart.addItem()` called
-2. **CSRF token check** → `hasXsrfToken()` returns `true` → Skip `/sanctum/csrf-cookie`
-3. **POST /cart/add** → Uses existing session cookies → Product added to same cart
-4. **Update state** → Cart items updated in store and localStorage
-5. **Result**: Product added to the single persistent cart
+2. **NO CSRF initialization** → Function directly calls `addToCart()` API
+3. **Axios request** → Automatically includes `XSRF-TOKEN` cookie (set during app load)
+4. **POST /cart/add** → Uses existing session cookies → Product added to same cart
+5. **Update state** → Cart items updated in store and localStorage
+6. **Result**: Product added to the **single persistent cart** - no new cart created
+
+**Key Difference from Old Implementation:**
+- ❌ **Old**: Called `initCsrfToken()` before each cart operation → Could create new sessions
+- ✅ **New**: No CSRF init in cart operations → Always uses the existing session from app load
 
 ## Verification Steps
 
