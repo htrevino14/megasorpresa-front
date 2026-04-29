@@ -52,6 +52,7 @@ export const useCartStore = defineStore('cart', {
     subtotal: 0,
     total_items: 0,
     isLoading: false,
+    isInitialized: false,
   }),
 
   getters: {
@@ -105,8 +106,14 @@ export const useCartStore = defineStore('cart', {
 
     /**
      * Fetch the cart from the backend and update the local state.
+     * Only fetches once per session to avoid redundant calls.
      */
     async fetchCart(): Promise<void> {
+      // Skip if already initialized to prevent duplicate fetches
+      if (this.isInitialized) {
+        return
+      }
+
       try {
         this.isLoading = true
         const response = await getCart()
@@ -117,6 +124,7 @@ export const useCartStore = defineStore('cart', {
         this.total_items = cart.total_items
 
         this.persistCart()
+        this.isInitialized = true
       } catch (error) {
         console.error('Failed to fetch cart:', error)
       } finally {
@@ -217,6 +225,7 @@ export const useCartStore = defineStore('cart', {
       this.items = []
       this.subtotal = 0
       this.total_items = 0
+      this.isInitialized = false
       safeRemoveItem(STORAGE_KEY)
     },
   },
