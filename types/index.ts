@@ -48,17 +48,28 @@ export interface CartItem {
   product: {
     id: number
     name: string
+    slug: string
+    sku: string
     base_price: number
+    primary_image: string | null
   }
   quantity: number
   price_at_addition: number
   subtotal: number
 }
 
+/** Shipping city reference on the cart */
+export interface CartShippingCity {
+  id: number
+  name: string
+}
+
 /** Shopping cart response from backend */
 export interface Cart {
   id: number
   session_id?: string
+  shipping_city: CartShippingCity | null
+  scheduled_delivery_date: string | null
   items: CartItem[]
   subtotal: number
   total_items: number
@@ -69,6 +80,8 @@ export interface CartState {
   items: CartItem[]
   subtotal: number
   total_items: number
+  shipping_city: CartShippingCity | null
+  scheduled_delivery_date: string | null
   isLoading: boolean
   isInitialized: boolean
 }

@@ -13,7 +13,7 @@
  *   SSR errors and wrapped in try-catch to handle exceptions.
  */
 import { defineStore } from 'pinia'
-import type { CartState, CartItem } from '@@/types/index'
+import type { CartState, CartItem, CartShippingCity } from '@@/types/index'
 import { getCart, addToCart, updateCartQuantity, removeFromCart } from '~/api/cart'
 
 const STORAGE_KEY = 'cart_state'
@@ -51,6 +51,8 @@ export const useCartStore = defineStore('cart', {
     items: [],
     subtotal: 0,
     total_items: 0,
+    shipping_city: null,
+    scheduled_delivery_date: null,
     isLoading: false,
     isInitialized: false,
   }),
@@ -70,6 +72,12 @@ export const useCartStore = defineStore('cart', {
 
     /** Returns the grand total (same as subtotal for now). */
     cartTotal: (state): number => state.subtotal,
+
+    /** Returns the shipping city or null. */
+    shippingCity: (state): CartShippingCity | null => state.shipping_city,
+
+    /** Returns the scheduled delivery date string or null. */
+    deliveryDate: (state): string | null => state.scheduled_delivery_date,
   },
 
   actions: {
@@ -85,6 +93,8 @@ export const useCartStore = defineStore('cart', {
           this.items = parsed.items ?? []
           this.subtotal = parsed.subtotal ?? 0
           this.total_items = parsed.total_items ?? 0
+          this.shipping_city = parsed.shipping_city ?? null
+          this.scheduled_delivery_date = parsed.scheduled_delivery_date ?? null
         } catch {
           // Invalid JSON, clear it
           safeRemoveItem(STORAGE_KEY)
@@ -106,6 +116,8 @@ export const useCartStore = defineStore('cart', {
         items: this.items,
         subtotal: this.subtotal,
         total_items: this.total_items,
+        shipping_city: this.shipping_city,
+        scheduled_delivery_date: this.scheduled_delivery_date,
       }
       safeSetItem(STORAGE_KEY, JSON.stringify(state))
     },
@@ -119,7 +131,14 @@ export const useCartStore = defineStore('cart', {
       if (this.isInitialized) {
         return
       }
+      return this.refreshCart()
+    },
 
+    /**
+     * Force a fresh fetch from the backend regardless of initialization state.
+     * Use this when navigating to /cart to get authoritative DB state.
+     */
+    async refreshCart(): Promise<void> {
       try {
         this.isLoading = true
         const response = await getCart()
@@ -128,10 +147,11 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
+        this.shipping_city = cart.shipping_city ?? null
+        this.scheduled_delivery_date = cart.scheduled_delivery_date ?? null
 
         this.persistCart()
         this.isInitialized = true
-        // Persist the initialized flag to localStorage
         safeSetItem(INITIALIZED_KEY, 'true')
       } catch (error) {
         console.error('Failed to fetch cart:', error)
@@ -170,6 +190,8 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
+        this.shipping_city = cart.shipping_city ?? null
+        this.scheduled_delivery_date = cart.scheduled_delivery_date ?? null
 
         this.persistCart()
       } catch (error) {
@@ -195,6 +217,8 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
+        this.shipping_city = cart.shipping_city ?? null
+        this.scheduled_delivery_date = cart.scheduled_delivery_date ?? null
 
         this.persistCart()
       } catch (error) {
@@ -219,6 +243,8 @@ export const useCartStore = defineStore('cart', {
         this.items = cart.items
         this.subtotal = cart.subtotal
         this.total_items = cart.total_items
+        this.shipping_city = cart.shipping_city ?? null
+        this.scheduled_delivery_date = cart.scheduled_delivery_date ?? null
 
         this.persistCart()
       } catch (error) {
@@ -234,6 +260,8 @@ export const useCartStore = defineStore('cart', {
       this.items = []
       this.subtotal = 0
       this.total_items = 0
+      this.shipping_city = null
+      this.scheduled_delivery_date = null
       this.isInitialized = false
       safeRemoveItem(STORAGE_KEY)
       safeRemoveItem(INITIALIZED_KEY)
