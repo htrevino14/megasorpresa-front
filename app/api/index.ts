@@ -3,52 +3,73 @@ import axios from 'axios'
 const api = axios.create({
   baseURL: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:8080',
   withCredentials: true,
+  // Desde axios 1.x, el header X-XSRF-TOKEN sólo se envía same-origin a menos
+  // que se habilite explícitamente. Como front (:3000) y back (:8080) son
+  // cross-origin, ESTO ES OBLIGATORIO para que Sanctum acepte POST/PUT/DELETE.
+  withXSRFToken: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
   },
 })
 
 /**
- * Check if CSRF token cookie exists.
- * Laravel Sanctum stores the CSRF token in an XSRF-TOKEN cookie.
+ * Persistencia del token de carrito de invitado (X-Cart-Token).
  *
- * NOTE: If Laravel sets XSRF-TOKEN with HttpOnly=true, this check will fail!
- * The XSRF-TOKEN cookie MUST be accessible to JavaScript (HttpOnly=false).
- *
- * @returns True if XSRF-TOKEN cookie exists, false otherwise.
+ * El backend identifica el carrito de un invitado mediante un UUID que envía
+ * en el header `X-Cart-Token` de cada respuesta. Si no lo reenviamos en las
+ * siguientes peticiones, el backend crea un carrito (y sesión) nuevo cada vez.
  */
+const CART_TOKEN_HEADER = 'X-Cart-Token'
+const CART_TOKEN_STORAGE_KEY = 'cart_token'
+
+function getStoredCartToken(): string | null {
+  if (!import.meta.client) return null
+  try {
+    return localStorage.getItem(CART_TOKEN_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function storeCartToken(token: string): void {
+  if (!import.meta.client) return
+  try {
+    localStorage.setItem(CART_TOKEN_STORAGE_KEY, token)
+  } catch {
+    // ignorar quota/security errors
+  }
+}
+
+api.interceptors.request.use((config) => {
+  const token = getStoredCartToken()
+  if (token) {
+    config.headers = config.headers ?? {}
+    config.headers[CART_TOKEN_HEADER] = token
+  }
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => {
+    const headerToken
+      = (response.headers?.[CART_TOKEN_HEADER.toLowerCase()] as string | undefined)
+        ?? (response.headers?.[CART_TOKEN_HEADER] as string | undefined)
+    if (headerToken && headerToken !== getStoredCartToken()) {
+      storeCartToken(headerToken)
+    }
+    return response
+  },
+  error => Promise.reject(error),
+)
+
 function hasXsrfToken(): boolean {
   if (!import.meta.client) return false
-
   try {
-    // Check if XSRF-TOKEN cookie exists
-    const cookies = document.cookie.split(';')
-    const hasXsrf = cookies.some(cookie => cookie.trim().startsWith('XSRF-TOKEN='))
-
-    // Also check for Laravel session cookie
-    // Session cookie name varies: megasorpresa_session, laravel_session, etc.
-    const hasSession = cookies.some(cookie => {
-      const trimmed = cookie.trim()
-      return trimmed.includes('_session=') || trimmed.startsWith('laravel_session=')
-    })
-
-    // Debug logging to help troubleshoot
-    if (import.meta.dev) {
-      console.log('[CSRF Check] XSRF-TOKEN exists:', hasXsrf)
-      console.log('[CSRF Check] Session cookie exists:', hasSession)
-      console.log('[CSRF Check] All cookies:', document.cookie)
-
-      // Additional check: warn if session exists but XSRF doesn't
-      if (hasSession && !hasXsrf) {
-        console.warn('[CSRF Check] ⚠️ WARNING: Session cookie exists but XSRF-TOKEN is missing!')
-        console.warn('[CSRF Check] This might mean XSRF-TOKEN is set with HttpOnly=true (should be false)')
-        console.warn('[CSRF Check] Check Laravel backend cookie configuration')
-      }
-    }
-
-    // Both cookies must exist for a valid session
-    return hasXsrf && hasSession
+    return document.cookie.split(';').some(c => c.trim().startsWith('XSRF-TOKEN='))
   } catch {
     return false
   }
@@ -57,47 +78,45 @@ function hasXsrfToken(): boolean {
 /**
  * Initialize CSRF token for Laravel Sanctum.
  *
- * This function calls `/sanctum/csrf-cookie` to establish a session
- * and set the CSRF token cookie required for state-changing requests.
- * Should be called before making POST, PATCH, or DELETE requests.
- *
- * The function checks if a CSRF token already exists to avoid redundant
- * calls and prevent unnecessary session regeneration on the backend.
- *
- * @returns Promise that resolves when CSRF token is initialized.
+ * Llama a `/sanctum/csrf-cookie` para establecer la cookie XSRF-TOKEN y la
+ * cookie de sesión. Idempotente: si ya existe XSRF-TOKEN, no hace nada.
  */
+let csrfInitPromise: Promise<void> | null = null
+
 export async function initCsrfToken(): Promise<void> {
-  // Only run on client side
   if (!import.meta.client) return
+  if (hasXsrfToken()) return
+  if (csrfInitPromise) return csrfInitPromise
 
-  // Skip if CSRF token already exists - this prevents creating new sessions
-  if (hasXsrfToken()) {
-    if (import.meta.dev) {
-      console.log('[CSRF Init] Skipping - valid session already exists')
-    }
-    return
-  }
-
-  if (import.meta.dev) {
-    console.log('[CSRF Init] No valid session found - initializing new session')
-  }
-
-  try {
-    // Remove /api suffix from base URL to reach sanctum endpoint
-    const baseURL = api.defaults.baseURL?.replace(/\/api$/, '') || 'http://localhost:8000'
-    await axios.get(`${baseURL}/sanctum/csrf-cookie`, {
-      withCredentials: true,
+  const baseURL = api.defaults.baseURL?.replace(/\/api\/?$/, '') || 'http://localhost:8080'
+  csrfInitPromise = axios
+    .get(`${baseURL}/sanctum/csrf-cookie`, { withCredentials: true })
+    .then(() => undefined)
+    .catch((error) => {
+      console.warn('[CSRF] Failed to initialize CSRF cookie:', error)
+    })
+    .finally(() => {
+      csrfInitPromise = null
     })
 
-    if (import.meta.dev) {
-      console.log('[CSRF Init] Session initialized successfully')
-      console.log('[CSRF Init] Cookies after init:', document.cookie)
-    }
-  } catch (error) {
-    // Log error but don't throw - allow the actual request to fail with more context
-    console.warn('Failed to initialize CSRF token:', error)
-    console.warn('Backend CORS configuration may need adjustment. Check Laravel config/cors.php')
-  }
+  return csrfInitPromise
 }
+
+/**
+ * Interceptor: garantiza CSRF cookie antes de cualquier mutación.
+ * Sin esto, el primer POST/PUT/PATCH/DELETE de la sesión falla con
+ * "CSRF token mismatch" (419).
+ */
+const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete'])
+
+api.interceptors.request.use(async (config) => {
+  if (import.meta.client) {
+    const method = (config.method ?? 'get').toLowerCase()
+    if (MUTATING_METHODS.has(method) && !hasXsrfToken()) {
+      await initCsrfToken()
+    }
+  }
+  return config
+})
 
 export default api
