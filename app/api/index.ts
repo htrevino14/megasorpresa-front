@@ -10,9 +10,49 @@ const api = axios.create({
 })
 
 /**
- * Track if CSRF token has been initialized to avoid redundant calls.
+ * Check if CSRF token cookie exists.
+ * Laravel Sanctum stores the CSRF token in an XSRF-TOKEN cookie.
+ *
+ * NOTE: If Laravel sets XSRF-TOKEN with HttpOnly=true, this check will fail!
+ * The XSRF-TOKEN cookie MUST be accessible to JavaScript (HttpOnly=false).
+ *
+ * @returns True if XSRF-TOKEN cookie exists, false otherwise.
  */
-let csrfInitialized = false
+function hasXsrfToken(): boolean {
+  if (!import.meta.client) return false
+
+  try {
+    // Check if XSRF-TOKEN cookie exists
+    const cookies = document.cookie.split(';')
+    const hasXsrf = cookies.some(cookie => cookie.trim().startsWith('XSRF-TOKEN='))
+
+    // Also check for Laravel session cookie
+    // Session cookie name varies: megasorpresa_session, laravel_session, etc.
+    const hasSession = cookies.some(cookie => {
+      const trimmed = cookie.trim()
+      return trimmed.includes('_session=') || trimmed.startsWith('laravel_session=')
+    })
+
+    // Debug logging to help troubleshoot
+    if (import.meta.dev) {
+      console.log('[CSRF Check] XSRF-TOKEN exists:', hasXsrf)
+      console.log('[CSRF Check] Session cookie exists:', hasSession)
+      console.log('[CSRF Check] All cookies:', document.cookie)
+
+      // Additional check: warn if session exists but XSRF doesn't
+      if (hasSession && !hasXsrf) {
+        console.warn('[CSRF Check] ⚠️ WARNING: Session cookie exists but XSRF-TOKEN is missing!')
+        console.warn('[CSRF Check] This might mean XSRF-TOKEN is set with HttpOnly=true (should be false)')
+        console.warn('[CSRF Check] Check Laravel backend cookie configuration')
+      }
+    }
+
+    // Both cookies must exist for a valid session
+    return hasXsrf && hasSession
+  } catch {
+    return false
+  }
+}
 
 /**
  * Initialize CSRF token for Laravel Sanctum.
@@ -21,8 +61,8 @@ let csrfInitialized = false
  * and set the CSRF token cookie required for state-changing requests.
  * Should be called before making POST, PATCH, or DELETE requests.
  *
- * The function caches the initialization state to avoid redundant calls
- * within the same session.
+ * The function checks if a CSRF token already exists to avoid redundant
+ * calls and prevent unnecessary session regeneration on the backend.
  *
  * @returns Promise that resolves when CSRF token is initialized.
  */
@@ -30,8 +70,17 @@ export async function initCsrfToken(): Promise<void> {
   // Only run on client side
   if (!import.meta.client) return
 
-  // Skip if already initialized
-  if (csrfInitialized) return
+  // Skip if CSRF token already exists - this prevents creating new sessions
+  if (hasXsrfToken()) {
+    if (import.meta.dev) {
+      console.log('[CSRF Init] Skipping - valid session already exists')
+    }
+    return
+  }
+
+  if (import.meta.dev) {
+    console.log('[CSRF Init] No valid session found - initializing new session')
+  }
 
   try {
     // Remove /api suffix from base URL to reach sanctum endpoint
@@ -39,7 +88,11 @@ export async function initCsrfToken(): Promise<void> {
     await axios.get(`${baseURL}/sanctum/csrf-cookie`, {
       withCredentials: true,
     })
-    csrfInitialized = true
+
+    if (import.meta.dev) {
+      console.log('[CSRF Init] Session initialized successfully')
+      console.log('[CSRF Init] Cookies after init:', document.cookie)
+    }
   } catch (error) {
     // Log error but don't throw - allow the actual request to fail with more context
     console.warn('Failed to initialize CSRF token:', error)

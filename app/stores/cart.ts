@@ -15,9 +15,9 @@
 import { defineStore } from 'pinia'
 import type { CartState, CartItem } from '@@/types/index'
 import { getCart, addToCart, updateCartQuantity, removeFromCart } from '~/api/cart'
-import { initCsrfToken } from '~/api/index'
 
 const STORAGE_KEY = 'cart_state'
+const INITIALIZED_KEY = 'cart_initialized'
 
 function safeGetItem(key: string): string | null {
   if (!import.meta.client) return null
@@ -52,6 +52,7 @@ export const useCartStore = defineStore('cart', {
     subtotal: 0,
     total_items: 0,
     isLoading: false,
+    isInitialized: false,
   }),
 
   getters: {
@@ -89,6 +90,12 @@ export const useCartStore = defineStore('cart', {
           safeRemoveItem(STORAGE_KEY)
         }
       }
+
+      // Restore the isInitialized flag from localStorage
+      const initialized = safeGetItem(INITIALIZED_KEY)
+      if (initialized === 'true') {
+        this.isInitialized = true
+      }
     },
 
     /**
@@ -105,8 +112,14 @@ export const useCartStore = defineStore('cart', {
 
     /**
      * Fetch the cart from the backend and update the local state.
+     * Only fetches once per session to avoid redundant calls.
      */
     async fetchCart(): Promise<void> {
+      // Skip if already initialized to prevent duplicate fetches
+      if (this.isInitialized) {
+        return
+      }
+
       try {
         this.isLoading = true
         const response = await getCart()
@@ -117,6 +130,9 @@ export const useCartStore = defineStore('cart', {
         this.total_items = cart.total_items
 
         this.persistCart()
+        this.isInitialized = true
+        // Persist the initialized flag to localStorage
+        safeSetItem(INITIALIZED_KEY, 'true')
       } catch (error) {
         console.error('Failed to fetch cart:', error)
       } finally {
@@ -138,11 +154,18 @@ export const useCartStore = defineStore('cart', {
       try {
         this.isLoading = true
 
-        // Initialize CSRF token before state-changing request
-        await initCsrfToken()
+        if (import.meta.dev) {
+          console.log('[Cart] Adding item - Product ID:', productId, 'Quantity:', quantity)
+          console.log('[Cart] Current cookies before add:', document.cookie)
+        }
 
         const response = await addToCart(productId, quantity, wrappingOptionId)
         const cart = response.data.data
+
+        if (import.meta.dev) {
+          console.log('[Cart] Response received - Cart ID:', cart.id, 'Total items:', cart.total_items)
+          console.log('[Cart] Cookies after add:', document.cookie)
+        }
 
         this.items = cart.items
         this.subtotal = cart.subtotal
@@ -165,9 +188,6 @@ export const useCartStore = defineStore('cart', {
     async updateQuantity(productId: number, quantity: number): Promise<void> {
       try {
         this.isLoading = true
-
-        // Initialize CSRF token before state-changing request
-        await initCsrfToken()
 
         const response = await updateCartQuantity(productId, quantity)
         const cart = response.data.data
@@ -193,9 +213,6 @@ export const useCartStore = defineStore('cart', {
       try {
         this.isLoading = true
 
-        // Initialize CSRF token before state-changing request
-        await initCsrfToken()
-
         const response = await removeFromCart(productId)
         const cart = response.data.data
 
@@ -217,7 +234,9 @@ export const useCartStore = defineStore('cart', {
       this.items = []
       this.subtotal = 0
       this.total_items = 0
+      this.isInitialized = false
       safeRemoveItem(STORAGE_KEY)
+      safeRemoveItem(INITIALIZED_KEY)
     },
   },
 })
