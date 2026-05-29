@@ -325,6 +325,7 @@ export interface CatalogProduct {
 export interface CatalogQueryParams {
   page?: number
   category?: string
+  age?: string
   sort?: string
   search?: string
 }

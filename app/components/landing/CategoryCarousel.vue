@@ -3,6 +3,7 @@
  * CategoryCarousel – Horizontally scrollable "Top categories" section.
  * Each card shows a pastel-coloured image tile and the category name below.
  * Data is fetched from GET /api/landing/category-carousel.
+ * Clicking navigates to /catalog with the category filter applied.
  *
  * @emits none
  */
@@ -15,6 +16,17 @@ const { data: carouselData } = await useAsyncData<CategoryCarouselItem[]>(
 )
 
 const categories = computed<CategoryCarouselItem[]>(() => carouselData.value ?? [])
+
+const catalogStore = useCatalogStore()
+
+/**
+ * Navigate to catalog with category filter
+ */
+function selectCategory(categorySlug: string) {
+  // Clear previous filters and set the category filter
+  catalogStore.clearAllFilters()
+  catalogStore.setCategory(categorySlug)
+}
 </script>
 
 <template>
@@ -29,8 +41,9 @@ const categories = computed<CategoryCarouselItem[]>(() => carouselData.value ?? 
         <NuxtLink
           v-for="cat in categories"
           :key="cat.id"
-          :to="`/category/${cat.slug}`"
+          :to="{ path: '/catalog', query: { category: cat.slug } }"
           class="group flex flex-col items-center gap-3"
+          @click="selectCategory(cat.slug)"
         >
           <!-- Image tile -->
           <div

@@ -2,6 +2,7 @@
 /**
  * AgeSelector – "Shop by age" section with vibrant circular age-group buttons.
  * Data is fetched from GET /api/landing/age-groups.
+ * Clicking navigates to /catalog with the age filter applied.
  *
  * @emits none
  */
@@ -14,6 +15,17 @@ const { data: ageData } = await useAsyncData<AgeGroup[]>(
 )
 
 const ageGroups = computed<AgeGroup[]>(() => ageData.value ?? [])
+
+const catalogStore = useCatalogStore()
+
+/**
+ * Navigate to catalog with age filter
+ */
+function selectAge(ageSlug: string) {
+  // Clear previous filters and set the age filter
+  catalogStore.clearAllFilters()
+  catalogStore.setAge(ageSlug)
+}
 </script>
 
 <template>
@@ -27,9 +39,10 @@ const ageGroups = computed<AgeGroup[]>(() => ageData.value ?? [])
         <NuxtLink
           v-for="group in ageGroups"
           :key="group.slug"
-          :to="`/age/${group.slug}`"
+          :to="{ path: '/catalog', query: { age: group.slug } }"
           class="flex h-32 w-32 shrink-0 flex-col items-center justify-center rounded-full px-2 text-center shadow-sm transition-transform duration-200 hover:scale-105 md:h-44 md:w-44"
           :style="{ backgroundColor: group.bg_color, color: group.text_color }"
+          @click="selectAge(group.slug)"
         >
           <span class="font-fredoka text-xl font-bold leading-tight md:text-2xl">{{ group.label }}</span>
           <span class="mt-1 font-fredoka text-xs font-semibold tracking-wide md:text-sm">{{ group.sublabel }}</span>

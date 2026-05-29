@@ -4,7 +4,8 @@
  *
  * Uses the landing layout so it shares the exact same header (announcement
  * bar, blue nav, megamenu) and footer as the home page.
- * Syncs filters (category, sort) and page number with the URL query string.
+ * Syncs filters (category, age, sort) and page number with the URL query string.
+ * Integrates with catalogStore for state management.
  */
 import { getCatalogProducts } from '~/api/catalog'
 import type { CatalogProduct, CatalogQueryParams, PaginatedResponse } from '@@/types/index'
@@ -13,11 +14,18 @@ definePageMeta({ layout: 'landing' })
 
 const route = useRoute()
 const router = useRouter()
+const catalogStore = useCatalogStore()
 
-// ── Filter state (synced with URL) ────────────────────────────────────────────
-const category = ref<string>((route.query.category as string) ?? '')
-const sort = ref<string>((route.query.sort as string) ?? '')
-const page = ref<number>(Number(route.query.page) || 1)
+// ── Initialize store from URL on mount ────────────────────────────────────────
+onMounted(() => {
+  catalogStore.initFromQuery(route.query)
+})
+
+// ── Filter state (synced with store and URL) ──────────────────────────────────
+const category = computed(() => catalogStore.category)
+const age = computed(() => catalogStore.age)
+const sort = computed(() => catalogStore.sort)
+const page = computed(() => catalogStore.page)
 
 const sortOptions = [
   { value: '', label: 'Relevancia' },
@@ -26,43 +34,53 @@ const sortOptions = [
   { value: 'newest', label: 'Más recientes' },
 ]
 
-// ── Sync URL → state on browser navigation ────────────────────────────────────
+// ── Sync URL → store on browser navigation ────────────────────────────────────
 watch(
   () => route.query,
   (q) => {
-    category.value = (q.category as string) ?? ''
-    sort.value = (q.sort as string) ?? ''
-    page.value = Number(q.page) || 1
+    catalogStore.initFromQuery(q)
   },
 )
 
 // ── Push filter changes to URL ────────────────────────────────────────────────
 function applyFilters() {
-  page.value = 1
+  catalogStore.setPage(1)
   pushQuery()
 }
 
 function pushQuery() {
-  const query: Record<string, string> = {}
-  if (category.value) query.category = category.value
-  if (sort.value) query.sort = sort.value
-  if (page.value > 1) query.page = String(page.value)
-  router.push({ query })
+  router.push({ query: catalogStore.toQuery() })
 }
 
 function onPageChange(newPage: number) {
-  page.value = newPage
+  catalogStore.setPage(newPage)
+  pushQuery()
+}
+
+function onSortChange(newSort: string) {
+  catalogStore.setSort(newSort)
+  pushQuery()
+}
+
+function clearCategoryFilter() {
+  catalogStore.clearFilter('category')
+  pushQuery()
+}
+
+function clearAgeFilter() {
+  catalogStore.clearFilter('age')
   pushQuery()
 }
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
 const queryKey = computed(() =>
-  `catalog-${category.value}-${sort.value}-${page.value}`,
+  `catalog-${category.value}-${age.value}-${sort.value}-${page.value}`,
 )
 
 const params = computed<CatalogQueryParams>(() => ({
   page: page.value,
   ...(category.value ? { category: category.value } : {}),
+  ...(age.value ? { age: age.value } : {}),
   ...(sort.value ? { sort: sort.value } : {}),
 }))
 
@@ -112,9 +130,9 @@ async function addToCart(product: CatalogProduct) {
         <div class="mb-6 flex flex-wrap items-center gap-3">
           <!-- Sort -->
           <select
-            v-model="sort"
+            :value="sort"
             class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            @change="applyFilters"
+            @change="onSortChange(($event.target as HTMLSelectElement).value)"
           >
             <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
               {{ opt.label }}
@@ -122,15 +140,29 @@ async function addToCart(product: CatalogProduct) {
           </select>
         </div>
 
-        <!-- Active filter chip for category -->
-        <div v-if="category" class="mb-4 flex flex-wrap gap-2">
-          <span class="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
+        <!-- Active filter chips -->
+        <div v-if="category || age" class="mb-4 flex flex-wrap gap-2">
+          <!-- Category filter chip -->
+          <span v-if="category" class="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
             Categoría: {{ category }}
             <button
               type="button"
               class="ml-1 text-yellow-600 hover:text-yellow-800"
               aria-label="Quitar filtro de categoría"
-              @click="category = ''; applyFilters()"
+              @click="clearCategoryFilter"
+            >
+              ✕
+            </button>
+          </span>
+
+          <!-- Age filter chip -->
+          <span v-if="age" class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+            Edad: {{ age }}
+            <button
+              type="button"
+              class="ml-1 text-blue-600 hover:text-blue-800"
+              aria-label="Quitar filtro de edad"
+              @click="clearAgeFilter"
             >
               ✕
             </button>
