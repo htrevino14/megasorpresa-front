@@ -5,15 +5,25 @@
  * Columna izquierda (70%): wizard/acordeón secuencial con 5 pasos.
  * Columna derecha (30% sticky): resumen del carrito.
  *
- * El estado del wizard se maneja localmente; los pasos sólo se activan
- * uno a la vez y los anteriores quedan en modo "completado" colapsado.
- * Aún no se conecta al backend.
+ * Cada paso bindea sus inputs directamente al store `useCheckoutStore()`,
+ * de modo que el estado del formulario es un único `payload` reactivo.
+ * El paso 5 (pago) dispara `submitOrder()` y, en caso de éxito, emite
+ * `success` para redirigir a la página de confirmación.
  */
+import type { CheckoutPayload } from '@@/types/index'
+import type { Component } from 'vue'
+import CheckoutStepPhone from './StepPhone.vue'
+import CheckoutStepRecipient from './StepRecipient.vue'
+import CheckoutStepSchedule from './StepSchedule.vue'
+import CheckoutStepDedication from './StepDedication.vue'
+import CheckoutStepPayment from './StepPayment.vue'
 
 const TOTAL_STEPS = 5
 
+const checkout = useCheckoutStore()
+
 /** Paso actualmente expandido (1-5). */
-const currentStep = ref(1)
+const activeStep = ref(1)
 
 /** Pasos marcados como completados. */
 const completedSteps = ref<Set<number>>(new Set())
@@ -21,30 +31,67 @@ const completedSteps = ref<Set<number>>(new Set())
 interface StepDescriptor {
   id: number
   title: string
-  component: string
+  component: Component
+  /** Prefijo usado en las claves de error del backend (p.ej. "recipient"). */
+  section: keyof CheckoutPayload
 }
 
 const steps: StepDescriptor[] = [
-  { id: 1, title: 'Confirma tu teléfono', component: 'CheckoutStepPhone' },
-  { id: 2, title: 'Elige a quién enviarlo', component: 'CheckoutStepRecipient' },
-  { id: 3, title: 'Escoge un horario', component: 'CheckoutStepSchedule' },
-  { id: 4, title: 'Agrega una dedicatoria', component: 'CheckoutStepDedication' },
-  { id: 5, title: 'Completa el pago', component: 'CheckoutStepPayment' },
+  { id: 1, title: 'Confirma tu teléfono', component: CheckoutStepPhone, section: 'phone' },
+  { id: 2, title: 'Elige a quién enviarlo', component: CheckoutStepRecipient, section: 'recipient' },
+  { id: 3, title: 'Escoge un horario', component: CheckoutStepSchedule, section: 'schedule' },
+  { id: 4, title: 'Agrega una dedicatoria', component: CheckoutStepDedication, section: 'dedication' },
+  { id: 5, title: 'Completa el pago', component: CheckoutStepPayment, section: 'payment' },
 ]
 
 function goToStep(step: number) {
   // Sólo permitir ir a un paso si está completado o es el actual/siguiente disponible
-  if (step <= currentStep.value || completedSteps.value.has(step - 1)) {
-    currentStep.value = step
+  if (step <= activeStep.value || completedSteps.value.has(step - 1)) {
+    activeStep.value = step
   }
 }
 
 function handleStepCompleted(step: number) {
   completedSteps.value.add(step)
   if (step < TOTAL_STEPS) {
-    currentStep.value = step + 1
+    activeStep.value = step + 1
   }
 }
+
+/** Permite a un paso retroceder al anterior (botón "Atrás"). */
+function handleStepPrev(step: number) {
+  if (step > 1) activeStep.value = step - 1
+}
+
+/**
+ * Cuando el backend devuelve errores 422, salta al primer paso que los tenga
+ * para que el usuario pueda corregirlos sin tener que buscar manualmente.
+ */
+watch(
+  () => checkout.errors,
+  (errors) => {
+    if (Object.keys(errors).length === 0) return
+    const firstBad = steps.find(s => checkout.hasSectionErrors(s.section))
+    if (firstBad) activeStep.value = firstBad.id
+  },
+  { deep: true },
+)
+
+/** Éxito en el paso 5: redirige a la confirmación / pasarela de pago. */
+function handleOrderSuccess(payload: { orderId: number, trackingNumber: string, paymentUrl: string | null }) {
+  if (payload.paymentUrl) {
+    // Redirige al gateway externo (MercadoPago) si aplica.
+    window.location.href = payload.paymentUrl
+    return
+  }
+  navigateTo(`/order/${payload.orderId}`)
+}
+
+// Al desmontar, limpiamos errores transitorios (pero conservamos el payload
+// por si el usuario quiere reintentar al volver a la página).
+onBeforeUnmount(() => {
+  checkout.clearErrors()
+})
 </script>
 
 <template>
@@ -65,7 +112,7 @@ function handleStepCompleted(step: number) {
           <button
             type="button"
             class="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-            :disabled="step.id > currentStep && !completedSteps.has(step.id - 1)"
+            :disabled="step.id > activeStep && !completedSteps.has(step.id - 1)"
             @click="goToStep(step.id)"
           >
             <!-- Indicador numérico -->
@@ -74,7 +121,7 @@ function handleStepCompleted(step: number) {
               :class="[
                 completedSteps.has(step.id)
                   ? 'border-green-500 bg-green-500 text-white'
-                  : currentStep === step.id
+                  : activeStep === step.id
                     ? 'border-yellow-400 bg-yellow-400 text-white'
                     : 'border-gray-300 bg-white text-gray-400',
               ]"
@@ -94,16 +141,16 @@ function handleStepCompleted(step: number) {
             <!-- Título -->
             <span
               class="flex-1 text-base font-semibold sm:text-lg"
-              :class="currentStep === step.id || completedSteps.has(step.id) ? 'text-gray-900' : 'text-gray-400'"
+              :class="activeStep === step.id || completedSteps.has(step.id) ? 'text-gray-900' : 'text-gray-400'"
             >
               {{ step.title }}
             </span>
 
             <!-- Chevron sólo cuando es accesible -->
             <svg
-              v-if="currentStep === step.id"
+              v-if="activeStep === step.id"
               class="h-5 w-5 text-gray-400 transition-transform"
-              :class="{ 'rotate-180': currentStep === step.id }"
+              :class="{ 'rotate-180': activeStep === step.id }"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -114,10 +161,12 @@ function handleStepCompleted(step: number) {
 
           <!-- Body del paso -->
           <Transition name="step">
-            <div v-if="currentStep === step.id" class="border-t border-gray-100 px-5 py-6">
+            <div v-if="activeStep === step.id" class="border-t border-gray-100 px-5 py-6">
               <component
                 :is="step.component"
                 @next="handleStepCompleted(step.id)"
+                @prev="handleStepPrev(step.id)"
+                @success="handleOrderSuccess"
               />
             </div>
           </Transition>
