@@ -86,6 +86,68 @@ export interface CartState {
   isInitialized: boolean
 }
 
+/* ─── Checkout ───────────────────────────────────────────────────────── */
+
+/** Datos del paso 1 (teléfono del comprador). */
+export interface CheckoutPhone {
+  country_code: string
+  phone_number: string
+}
+
+/** Datos del paso 2 (destinatario + dirección). */
+export interface CheckoutRecipient {
+  full_name: string
+  phone: string
+  street: string
+  exterior_number: string
+  interior_number: string
+  neighborhood: string
+  zip_code: string
+  city: string
+  state: string
+  references: string
+}
+
+/** Datos del paso 3 (fecha y franja horaria). */
+export interface CheckoutSchedule {
+  delivery_date: string
+  delivery_slot: 'morning' | 'noon' | 'afternoon' | 'evening' | null
+}
+
+/** Datos del paso 4 (dedicatoria opcional). */
+export interface CheckoutDedication {
+  message: string
+  signature: string
+}
+
+/** Datos del paso 5 (pago). */
+export interface CheckoutPayment {
+  method: 'mercadopago' | 'oxxo' | null
+  accepted_terms: boolean
+}
+
+/** Payload completo enviado al backend en /api/orders/checkout. */
+export interface CheckoutPayload {
+  phone: string
+  recipient: CheckoutRecipient
+  schedule: CheckoutSchedule
+  dedication: CheckoutDedication
+  payment: CheckoutPayment
+}
+
+/** Respuesta esperada al crear la orden. */
+export interface CheckoutResponse {
+  data: {
+    id: number
+    tracking_number: string
+    total_amount: number
+    payment_url?: string
+  }
+}
+
+/** Errores de validación devueltos por Laravel (formato `field.path` → mensajes). */
+export type CheckoutErrors = Record<string, string[]>
+
 /** Order line item */
 export interface OrderItem {
   id: number
