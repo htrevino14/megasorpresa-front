@@ -9,4 +9,4 @@ import type { CheckoutPayload, CheckoutResponse } from '@@/types/index'
  * se encarga de procesar.
  */
 export const submitCheckout = (payload: CheckoutPayload) =>
-  api.post<CheckoutResponse>('/api/orders/checkout', payload)
+  api.post<CheckoutResponse>('/orders/checkout', payload)
