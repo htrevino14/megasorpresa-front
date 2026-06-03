@@ -35,6 +35,11 @@ export interface Product {
 export interface User {
   id: number
   name: string
+  first_name?: string | null
+  last_name?: string | null
+  gender?: string | null
+  phone?: string | null
+  loyalty_points?: number
   email: string
   email_verified_at?: string
   role: 'admin' | 'customer'
