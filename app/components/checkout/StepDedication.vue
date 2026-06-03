@@ -8,11 +8,10 @@
 const emit = defineEmits<{ next: [], prev: [] }>()
 
 const checkout = useCheckoutStore()
-const dedication = checkout.payload.dedication
 
 const MAX_LENGTH = 250
 
-const remaining = computed(() => MAX_LENGTH - dedication.message.length)
+const remaining = computed(() => MAX_LENGTH - checkout.payload.card_message.length)
 
 function handleNext() {
   checkout.clearSectionErrors('dedication')
@@ -33,13 +32,13 @@ function handleNext() {
       </label>
       <textarea
         id="dedication-message"
-        v-model="dedication.message"
+        v-model="checkout.payload.card_message"
         rows="4"
         :maxlength="MAX_LENGTH"
         placeholder="Para que sepas lo mucho que te quiero…"
         class="w-full resize-none rounded-lg border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
         :class="
-          checkout.fieldError('dedication.message')
+          checkout.fieldError('card_message')
             ? 'border-red-400 focus:border-red-400 focus:ring-red-100'
             : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-100'
         "
@@ -47,8 +46,8 @@ function handleNext() {
       <p class="mt-1 text-right text-xs text-gray-400">
         {{ remaining }} caracteres restantes
       </p>
-      <p v-if="checkout.fieldError('dedication.message')" class="mt-1 text-xs text-red-600">
-        {{ checkout.fieldError('dedication.message') }}
+      <p v-if="checkout.fieldError('card_message')" class="mt-1 text-xs text-red-600">
+        {{ checkout.fieldError('card_message') }}
       </p>
     </div>
 
@@ -58,19 +57,19 @@ function handleNext() {
       </label>
       <input
         id="dedication-signature"
-        v-model="dedication.signature"
+        v-model="checkout.payload.signature"
         type="text"
         placeholder="Con cariño, María"
         maxlength="60"
         class="w-full max-w-md rounded-lg border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
         :class="
-          checkout.fieldError('dedication.signature')
+          checkout.fieldError('signature')
             ? 'border-red-400 focus:border-red-400 focus:ring-red-100'
             : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-100'
         "
       />
-      <p v-if="checkout.fieldError('dedication.signature')" class="mt-1 text-xs text-red-600">
-        {{ checkout.fieldError('dedication.signature') }}
+      <p v-if="checkout.fieldError('signature')" class="mt-1 text-xs text-red-600">
+        {{ checkout.fieldError('signature') }}
       </p>
     </div>
 

@@ -7,10 +7,10 @@
  *
  * Cada paso bindea sus inputs directamente al store `useCheckoutStore()`,
  * de modo que el estado del formulario es un único `payload` reactivo.
- * El paso 5 (pago) dispara `submitOrder()` y, en caso de éxito, emite
- * `success` para redirigir a la página de confirmación.
+ * El paso 5 (pago) realiza la petición de checkout y, en caso de éxito,
+ * redirige a `/checkout/success`.
  */
-import type { CheckoutPayload } from '@@/types/index'
+import type { CheckoutSection } from '@@/types/index'
 import type { Component } from 'vue'
 import CheckoutStepPhone from './StepPhone.vue'
 import CheckoutStepRecipient from './StepRecipient.vue'
@@ -32,8 +32,8 @@ interface StepDescriptor {
   id: number
   title: string
   component: Component
-  /** Prefijo usado en las claves de error del backend (p.ej. "recipient"). */
-  section: keyof CheckoutPayload
+  /** Sección lógica usada para mapear los errores del backend a su paso. */
+  section: CheckoutSection
 }
 
 const steps: StepDescriptor[] = [
@@ -76,16 +76,6 @@ watch(
   },
   { deep: true },
 )
-
-/** Éxito en el paso 5: redirige a la confirmación / pasarela de pago. */
-function handleOrderSuccess(payload: { orderId: number, trackingNumber: string, paymentUrl: string | null }) {
-  if (payload.paymentUrl) {
-    // Redirige al gateway externo (MercadoPago) si aplica.
-    window.location.href = payload.paymentUrl
-    return
-  }
-  navigateTo(`/order/${payload.orderId}`)
-}
 
 // Al desmontar, limpiamos errores transitorios (pero conservamos el payload
 // por si el usuario quiere reintentar al volver a la página).
@@ -166,7 +156,6 @@ onBeforeUnmount(() => {
                 :is="step.component"
                 @next="handleStepCompleted(step.id)"
                 @prev="handleStepPrev(step.id)"
-                @success="handleOrderSuccess"
               />
             </div>
           </Transition>

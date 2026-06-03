@@ -1,62 +1,105 @@
 /**
  * Checkout Pinia store.
  *
- * Recolecta de manera reactiva la información de los 5 pasos del wizard de
- * checkout (`phone`, `recipient`, `schedule`, `dedication`, `payment`) en un
- * único objeto `payload`, y expone la acción `submitOrder()` que envía toda
- * la información a `POST /api/orders/checkout`.
+ * Recolecta de manera reactiva la información del wizard de checkout en un
+ * único objeto plano `payload` que coincide 1:1 con lo que valida el backend
+ * (`StoreCheckoutRequest`). El envío de la orden lo realiza el paso 5
+ * (`StepPayment.vue`); este store solo guarda el estado del formulario,
+ * los errores de validación y un snapshot del pedido confirmado.
  *
- * - Los errores de validación (422) se exponen en `errors` con el formato
- *   `'recipient.full_name': ['…']` para que cada paso pueda mostrar el mensaje
- *   junto a su campo.
- * - Cualquier otro error queda en `serverError` para mostrarse como alerta.
+ * - Los errores de validación (422) se exponen en `errors` con el nombre plano
+ *   del campo (p.ej. `street`, `delivery_slot_id`) para que cada paso pueda
+ *   mostrar el mensaje junto a su campo.
+ * - `labels` guarda los nombres legibles (estado, ciudad, franja) elegidos en
+ *   los selects, para reconstruirlos en la pantalla de confirmación.
+ * - `confirmation` se persiste en sessionStorage para sobrevivir la redirección
+ *   a `/checkout/success`.
  */
 import { defineStore } from 'pinia'
-import type { AxiosError } from 'axios'
 import type {
   CheckoutPayload,
   CheckoutErrors,
-  CheckoutResponse,
+  CheckoutSection,
+  OrderConfirmation,
 } from '@@/types/index'
-import { submitCheckout } from '~/api/checkout'
+
+const CONFIRMATION_KEY = 'checkout_confirmation'
+
+interface CheckoutLabels {
+  state: string
+  city: string
+  deliverySlot: string
+}
 
 interface CheckoutState {
   payload: CheckoutPayload
   errors: CheckoutErrors
-  serverError: string | null
-  isSubmitting: boolean
-  orderId: number | null
-  trackingNumber: string | null
-  paymentUrl: string | null
+  labels: CheckoutLabels
+}
+
+/**
+ * Campos planos del payload que pertenecen a cada paso del wizard.
+ * Se usa para saltar al primer paso con errores y para limpiar errores
+ * por sección.
+ */
+const SECTION_FIELDS: Record<CheckoutSection, (keyof CheckoutPayload)[]> = {
+  phone: ['recipient_phone'],
+  recipient: [
+    'recipient_name',
+    'street',
+    'ext_number',
+    'neighborhood',
+    'dwelling_type',
+    'zip_code',
+    'state_id',
+    'city_id',
+    'references',
+  ],
+  schedule: ['delivery_date', 'delivery_slot_id'],
+  dedication: ['card_message', 'signature'],
+  payment: ['payment_method', 'subtotal', 'total'],
 }
 
 function emptyPayload(): CheckoutPayload {
   return {
-    phone: '',
-    recipient: {
-      recipient_name: '',
-      phone: '',
-      street: '',
-      ext_number: '',
-      interior_number: '',
-      neighborhood: '',
-      zip_code: '',
-      city: '',
-      state: '',
-      references: '',
-    },
-    schedule: {
-      delivery_date: '',
-      delivery_slot: null,
-    },
-    dedication: {
-      message: '',
-      signature: '',
-    },
-    payment: {
-      method: null,
-      accepted_terms: false,
-    },
+    // orders
+    payment_method: '',
+    subtotal: 0,
+    total: 0,
+    // order_details
+    delivery_date: '',
+    delivery_slot_id: null,
+    recipient_phone: '',
+    card_message: '',
+    signature: '',
+    // user_addresses
+    recipient_name: '',
+    street: '',
+    ext_number: '',
+    neighborhood: '',
+    dwelling_type: '',
+    zip_code: '',
+    state_id: null,
+    city_id: null,
+    references: '',
+    // wizard-only
+    accepted_terms: false,
+  }
+}
+
+function emptyLabels(): CheckoutLabels {
+  return { state: '', city: '', deliverySlot: '' }
+}
+
+/** Lee el snapshot de confirmación de sessionStorage (SSR-safe). */
+function readConfirmation(): OrderConfirmation | null {
+  if (!import.meta.client) return null
+  try {
+    const raw = sessionStorage.getItem(CONFIRMATION_KEY)
+    return raw ? (JSON.parse(raw) as OrderConfirmation) : null
+  }
+  catch {
+    return null
   }
 }
 
@@ -64,23 +107,20 @@ export const useCheckoutStore = defineStore('checkout', {
   state: (): CheckoutState => ({
     payload: emptyPayload(),
     errors: {},
-    serverError: null,
-    isSubmitting: false,
-    orderId: null,
-    trackingNumber: null,
-    paymentUrl: null,
+    labels: emptyLabels(),
   }),
 
   getters: {
-    /** Devuelve el primer mensaje de error para un campo (formato `seccion.campo`). */
-    fieldError: (state) => (path: string): string | null => {
-      const messages = state.errors[path]
+    /** Devuelve el primer mensaje de error para un campo plano (p.ej. `street`). */
+    fieldError: (state) => (field: string): string | null => {
+      const messages = state.errors[field]
       return messages && messages.length > 0 ? messages[0] : null
     },
 
-    /** True si hay al menos un error con el prefijo dado (p.ej. "recipient"). */
-    hasSectionErrors: (state) => (section: keyof CheckoutPayload): boolean => {
-      return Object.keys(state.errors).some(key => key.startsWith(`${section}.`))
+    /** True si hay al menos un error en algún campo de la sección dada. */
+    hasSectionErrors: (state) => (section: CheckoutSection): boolean => {
+      const fields = SECTION_FIELDS[section] as string[]
+      return Object.keys(state.errors).some(key => fields.includes(key))
     },
   },
 
@@ -88,72 +128,50 @@ export const useCheckoutStore = defineStore('checkout', {
     /** Limpia los errores antes de reintentar o avanzar de paso. */
     clearErrors() {
       this.errors = {}
-      this.serverError = null
     },
 
     /** Limpia los errores asociados a una sección específica. */
-    clearSectionErrors(section: keyof CheckoutPayload) {
+    clearSectionErrors(section: CheckoutSection) {
+      const fields = SECTION_FIELDS[section] as string[]
       const next: CheckoutErrors = {}
       for (const [key, value] of Object.entries(this.errors)) {
-        if (!key.startsWith(`${section}.`)) next[key] = value
+        if (!fields.includes(key)) next[key] = value
       }
       this.errors = next
     },
 
-    /** Reinicia el store (útil al salir del checkout o tras éxito). */
+    /** Guarda el snapshot del pedido confirmado en sessionStorage. */
+    saveConfirmation(confirmation: OrderConfirmation) {
+      if (!import.meta.client) return
+      try {
+        sessionStorage.setItem(CONFIRMATION_KEY, JSON.stringify(confirmation))
+      }
+      catch {
+        // Ignora errores de cuota/seguridad.
+      }
+    },
+
+    /** Recupera el snapshot del pedido confirmado (para la pantalla de éxito). */
+    loadConfirmation(): OrderConfirmation | null {
+      return readConfirmation()
+    },
+
+    /** Elimina el snapshot de confirmación de sessionStorage. */
+    clearConfirmation() {
+      if (!import.meta.client) return
+      try {
+        sessionStorage.removeItem(CONFIRMATION_KEY)
+      }
+      catch {
+        // Ignora errores de seguridad.
+      }
+    },
+
+    /** Reinicia el formulario del checkout (no toca la confirmación guardada). */
     reset() {
       this.payload = emptyPayload()
       this.errors = {}
-      this.serverError = null
-      this.isSubmitting = false
-      this.orderId = null
-      this.trackingNumber = null
-      this.paymentUrl = null
-    },
-
-    /**
-     * Envía el pedido al backend.
-     *
-     * @returns `true` si la orden se creó con éxito, `false` si hubo cualquier error.
-     */
-    async submitOrder(): Promise<boolean> {
-      this.clearErrors()
-      this.isSubmitting = true
-
-      try {
-        const { data } = await submitCheckout(this.payload)
-        const order = (data as CheckoutResponse).data
-        this.orderId = order.id
-        this.trackingNumber = order.tracking_number
-        this.paymentUrl = order.payment_url ?? null
-        return true
-      }
-      catch (err) {
-        const axiosErr = err as AxiosError<{ message?: string, errors?: CheckoutErrors }>
-        const status = axiosErr.response?.status
-
-        if (status === 422 && axiosErr.response?.data?.errors) {
-          this.errors = axiosErr.response.data.errors
-          this.serverError = axiosErr.response.data.message
-            ?? 'Por favor corrige los campos marcados.'
-        }
-        else if (status === 401) {
-          this.serverError = 'Tu sesión ha expirado. Inicia sesión de nuevo.'
-        }
-        else if (status === 409) {
-          this.serverError = axiosErr.response?.data?.message
-            ?? 'No hay stock suficiente para uno o más productos.'
-        }
-        else {
-          this.serverError = axiosErr.response?.data?.message
-            ?? 'Ocurrió un error al procesar tu pedido. Intenta de nuevo.'
-        }
-
-        return false
-      }
-      finally {
-        this.isSubmitting = false
-      }
+      this.labels = emptyLabels()
     },
   },
 })

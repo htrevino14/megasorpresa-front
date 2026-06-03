@@ -2,7 +2,7 @@
 /**
  * CheckoutStepPhone – Paso 1: Confirmación de teléfono.
  *
- * Bindea un único input directamente a `checkoutStore.payload.phone`.
+ * Bindea un único input directamente a `checkoutStore.payload.recipient_phone`.
  *
  * @emits next - Avanza al paso 2.
  */
@@ -11,7 +11,7 @@ const emit = defineEmits<{ next: [] }>()
 const checkout = useCheckoutStore()
 
 const isValid = computed(
-  () => checkout.payload.phone.replace(/\D/g, '').length >= 10,
+  () => checkout.payload.recipient_phone.replace(/\D/g, '').length >= 10,
 )
 
 function handleNext() {
@@ -33,19 +33,19 @@ function handleNext() {
       </label>
       <input
         id="phone"
-        v-model="checkout.payload.phone"
+        v-model="checkout.payload.recipient_phone"
         type="tel"
         inputmode="numeric"
         placeholder="+52 81 1234 5678"
         class="w-full max-w-md rounded-lg border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
         :class="
-          checkout.fieldError('phone')
+          checkout.fieldError('recipient_phone')
             ? 'border-red-400 focus:border-red-400 focus:ring-red-100'
             : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-100'
         "
       />
-      <p v-if="checkout.fieldError('phone')" class="mt-1 text-xs text-red-600">
-        {{ checkout.fieldError('phone') }}
+      <p v-if="checkout.fieldError('recipient_phone')" class="mt-1 text-xs text-red-600">
+        {{ checkout.fieldError('recipient_phone') }}
       </p>
     </div>
 
