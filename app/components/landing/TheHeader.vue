@@ -136,42 +136,7 @@ function toSlug(text: string): string {
 
         <!-- User action icons (desktop) -->
         <div class="hidden items-center gap-5 md:flex">
-          <template v-if="auth.isAuthenticated">
-            <!-- Authenticated: Mi Cuenta + Cerrar sesión -->
-            <div class="relative flex items-center gap-3">
-              <NuxtLink
-                to="/account"
-                class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
-              >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span class="text-xs">{{ auth.user?.name ?? 'Mi Cuenta' }}</span>
-              </NuxtLink>
-              <button
-                class="flex flex-col items-center gap-0.5 text-white/70 transition-colors hover:text-yellow-200"
-                aria-label="Cerrar sesión"
-                @click="handleLogout"
-              >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" />
-                </svg>
-                <span class="text-xs">Salir</span>
-              </button>
-            </div>
-          </template>
-          <template v-else>
-            <!-- Unauthenticated: Iniciar sesión -->
-            <button
-              class="flex flex-col items-center gap-0.5 text-white transition-colors hover:text-yellow-200"
-              @click="authModal.open('login')"
-            >
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span class="text-xs">Iniciar sesión</span>
-            </button>
-          </template>
+          <LandingUserMenu />
 
           <NuxtLink
             to="/cart"

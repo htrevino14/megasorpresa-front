@@ -88,6 +88,19 @@ export async function initCsrfToken(): Promise<void> {
   if (hasXsrfToken()) return
   if (csrfInitPromise) return csrfInitPromise
 
+  return forceCsrfRefresh()
+}
+
+/**
+ * Fuerza la obtención de una cookie XSRF-TOKEN fresca, ignorando si ya existe
+ * una. Necesario cuando la cookie quedó obsoleta (p.ej. tras un logout que
+ * regenera la sesión en Laravel) y el backend responde 419 "CSRF token
+ * mismatch".
+ */
+export async function forceCsrfRefresh(): Promise<void> {
+  if (!import.meta.client) return
+  if (csrfInitPromise) return csrfInitPromise
+
   const baseURL = api.defaults.baseURL?.replace(/\/api\/?$/, '') || 'http://localhost:8080'
   csrfInitPromise = axios
     .get(`${baseURL}/sanctum/csrf-cookie`, { withCredentials: true })
@@ -118,5 +131,30 @@ api.interceptors.request.use(async (config) => {
   }
   return config
 })
+
+/**
+ * Interceptor: si una mutación falla con 419 "CSRF token mismatch" (cookie
+ * XSRF-TOKEN obsoleta), renueva la cookie y reintenta la petición una sola vez.
+ */
+api.interceptors.response.use(
+  response => response,
+  async (error) => {
+    const status = error.response?.status
+    const original = error.config
+
+    if (
+      import.meta.client
+      && status === 419
+      && original
+      && !original._csrfRetry
+    ) {
+      original._csrfRetry = true
+      await forceCsrfRefresh()
+      return api(original)
+    }
+
+    return Promise.reject(error)
+  },
+)
 
 export default api
