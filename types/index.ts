@@ -88,64 +88,140 @@ export interface CartState {
 
 /* ─── Checkout ───────────────────────────────────────────────────────── */
 
-/** Datos del paso 1 (teléfono del comprador). */
-export interface CheckoutPhone {
-  country_code: string
-  phone_number: string
+/** Tipo de domicilio (coincide con user_addresses.dwelling_type en el backend). */
+export type DwellingType =
+  | 'casa'
+  | 'hotel'
+  | 'restaurante'
+  | 'escuela'
+  | 'oficina'
+  | 'hospital'
+  | 'teatro'
+  | 'plaza comercial'
+  | 'departamento'
+  | 'otro'
+
+/** Sección lógica del wizard (para mapear errores a su paso). */
+export type CheckoutSection =
+  | 'phone'
+  | 'recipient'
+  | 'schedule'
+  | 'dedication'
+  | 'payment'
+
+/** Estado del catálogo de ubicaciones (tabla `states`). */
+export interface CatalogState {
+  id: number
+  name: string
 }
 
-/** Datos del paso 2 (destinatario + dirección). */
-export interface CheckoutRecipient {
-  full_name: string
-  phone: string
-  street: string
-  exterior_number: string
-  interior_number: string
-  neighborhood: string
-  zip_code: string
-  city: string
-  state: string
-  references: string
+/** Ciudad del catálogo de ubicaciones (tabla `cities`). */
+export interface CatalogCity {
+  id: number
+  state_id: number
+  name: string
 }
 
-/** Datos del paso 3 (fecha y franja horaria). */
-export interface CheckoutSchedule {
-  delivery_date: string
-  delivery_slot: 'morning' | 'noon' | 'afternoon' | 'evening' | null
+/** Franja de entrega de una ciudad (tabla `delivery_slots`). */
+export interface DeliverySlot {
+  id: number
+  city_id: number
+  start_time: string | null
+  end_time: string | null
+  label: string
+  additional_cost: number | string
 }
 
-/** Datos del paso 4 (dedicatoria opcional). */
-export interface CheckoutDedication {
-  message: string
-  signature: string
-}
-
-/** Datos del paso 5 (pago). */
-export interface CheckoutPayment {
-  method: 'mercadopago' | 'oxxo' | null
-  accepted_terms: boolean
-}
-
-/** Payload completo enviado al backend en /api/orders/checkout. */
+/**
+ * Payload plano enviado al backend en POST /orders/checkout.
+ *
+ * Los campos se agrupan por su tabla destino:
+ *  - orders:         payment_method, subtotal, total
+ *  - order_details:  delivery_date, delivery_slot_id, recipient_phone,
+ *                    card_message, signature
+ *  - user_addresses: street, ext_number, neighborhood, dwelling_type,
+ *                    zip_code, state_id, city_id, references
+ */
 export interface CheckoutPayload {
-  phone: string
-  recipient: CheckoutRecipient
-  schedule: CheckoutSchedule
-  dedication: CheckoutDedication
-  payment: CheckoutPayment
+  // orders
+  payment_method: 'mercadopago' | 'oxxo' | ''
+  subtotal: number
+  total: number
+  // order_details
+  delivery_date: string
+  delivery_slot_id: number | null
+  recipient_phone: string
+  card_message: string
+  signature: string
+  // user_addresses
+  recipient_name: string
+  street: string
+  ext_number: string
+  neighborhood: string
+  dwelling_type: DwellingType | ''
+  zip_code: string
+  state_id: number | null
+  city_id: number | null
+  references: string
+  // sólo wizard (no se envía como columna)
+  accepted_terms: boolean
 }
 
 /** Respuesta esperada al crear la orden. */
 export interface CheckoutResponse {
+  success: boolean
+  message: string
   data: {
-    id: number
-    tracking_number: string
-    total_amount: number
-    payment_url?: string
+    order_id: number
+    order: {
+      id: number
+      tracking_number: string | null
+      status: { id: number, name: string }
+      total_amount: number | string
+      shipping_cost: number | string
+      payment_method: string | null
+    }
   }
 }
 
-/** Errores de validación devueltos por Laravel (formato `field.path` → mensajes). */
+/** Producto incluido en el resumen de confirmación del pedido. */
+export interface ConfirmationProduct {
+  name: string
+  image: string | null
+  sku: string
+  quantity: number
+  unit_price: number
+  line_total: number
+}
+
+/**
+ * Snapshot del pedido confirmado que se muestra en la pantalla de éxito.
+ * Se construye en el cliente combinando la respuesta del backend, el carrito
+ * y el payload del checkout, y se persiste en sessionStorage para sobrevivir
+ * la redirección y posibles recargas.
+ */
+export interface OrderConfirmation {
+  order_id: number
+  tracking_number: string | null
+  status: string
+  payment_method: 'mercadopago' | 'oxxo' | ''
+  subtotal: number
+  shipping_cost: number
+  total: number
+  recipient_name: string
+  phone: string
+  address_line: string
+  city_state: string
+  dwelling_type: string
+  references: string
+  delivery_date: string
+  delivery_slot_label: string
+  card_message: string
+  signature: string
+  products: ConfirmationProduct[]
+}
+
+/** Errores de validación devueltos por Laravel (formato `field` → mensajes). */
 export type CheckoutErrors = Record<string, string[]>
 
 /** Order line item */
