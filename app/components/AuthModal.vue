@@ -26,16 +26,32 @@ const loginEmailError = ref<string | null>(null)
 const loginPasswordError = ref<string | null>(null)
 
 // ── Register form state ───────────────────────────────────────────────────────
-const regName = ref('')
-const regEmail = ref('')
-const regPassword = ref('')
-const regPasswordConfirmation = ref('')
+type RegisterForm = {
+  first_name: string
+  last_name: string
+  gender: 'Ella' | 'Él' | ''
+  email: string
+  phone_code: string
+  phone: string
+  password: string
+}
+
+type ValidationErrors = Partial<Record<keyof RegisterForm, string[]>>
+
+const form = reactive<RegisterForm>({
+  first_name: '',
+  last_name: '',
+  gender: '',
+  email: '',
+  phone_code: '+52',
+  phone: '',
+  password: '',
+})
+
+const showPassword = ref(false)
 const regLoading = ref(false)
 const regApiError = ref<string | null>(null)
-const regNameError = ref<string | null>(null)
-const regEmailError = ref<string | null>(null)
-const regPasswordError = ref<string | null>(null)
-const regPasswordConfirmationError = ref<string | null>(null)
+const validationErrors = reactive<ValidationErrors>({})
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -55,16 +71,17 @@ function resetAll() {
   loginEmailError.value = null
   loginPasswordError.value = null
 
-  regName.value = ''
-  regEmail.value = ''
-  regPassword.value = ''
-  regPasswordConfirmation.value = ''
+  form.first_name = ''
+  form.last_name = ''
+  form.gender = ''
+  form.email = ''
+  form.phone_code = '+52'
+  form.phone = ''
+  form.password = ''
+  showPassword.value = false
   regLoading.value = false
   regApiError.value = null
-  regNameError.value = null
-  regEmailError.value = null
-  regPasswordError.value = null
-  regPasswordConfirmationError.value = null
+  resetValidationErrors()
 }
 
 // ── Keyboard: close on Escape ─────────────────────────────────────────────────
@@ -86,29 +103,29 @@ function validateLoginPassword(): boolean {
   loginPasswordError.value = null; return true
 }
 
-// ── Register validation ───────────────────────────────────────────────────────
-function validateRegName(): boolean {
-  if (!regName.value.trim()) { regNameError.value = 'El nombre es requerido.'; return false }
-  if (regName.value.trim().length < 2) { regNameError.value = 'El nombre debe tener al menos 2 caracteres.'; return false }
-  regNameError.value = null; return true
+// ── Register helpers ──────────────────────────────────────────────────────────
+function resetValidationErrors(): void {
+  for (const key of Object.keys(validationErrors) as Array<keyof ValidationErrors>) {
+    delete validationErrors[key]
+  }
 }
 
-function validateRegEmail(): boolean {
-  if (!regEmail.value.trim()) { regEmailError.value = 'El correo electrónico es requerido.'; return false }
-  if (!emailRegex.test(regEmail.value.trim())) { regEmailError.value = 'Ingresa un correo electrónico válido.'; return false }
-  regEmailError.value = null; return true
+function togglePasswordVisibility(): void {
+  showPassword.value = !showPassword.value
 }
 
-function validateRegPassword(): boolean {
-  if (!regPassword.value) { regPasswordError.value = 'La contraseña es requerida.'; return false }
-  if (regPassword.value.length < 8) { regPasswordError.value = 'La contraseña debe tener al menos 8 caracteres.'; return false }
-  regPasswordError.value = null; return true
-}
+function validatePassword(): boolean {
+  if (!form.password) {
+    validationErrors.password = ['La contraseña es requerida.']
+    return false
+  }
 
-function validateRegConfirmation(): boolean {
-  if (!regPasswordConfirmation.value) { regPasswordConfirmationError.value = 'Confirma tu contraseña.'; return false }
-  if (regPasswordConfirmation.value !== regPassword.value) { regPasswordConfirmationError.value = 'Las contraseñas no coinciden.'; return false }
-  regPasswordConfirmationError.value = null; return true
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(form.password)) {
+    validationErrors.password = ['Ingresa mínimo 8 caracteres con mayúsculas, minúsculas, números y un carácter especial.']
+    return false
+  }
+
+  return true
 }
 
 // ── Submit: login ─────────────────────────────────────────────────────────────
@@ -138,19 +155,21 @@ async function handleLogin() {
 // ── Submit: register ──────────────────────────────────────────────────────────
 async function handleRegister() {
   regApiError.value = null
-  const ok1 = validateRegName()
-  const ok2 = validateRegEmail()
-  const ok3 = validateRegPassword()
-  const ok4 = validateRegConfirmation()
-  if (!ok1 || !ok2 || !ok3 || !ok4) return
+  resetValidationErrors()
+
+  const passwordIsValid = validatePassword()
+  if (!passwordIsValid) return
 
   regLoading.value = true
   try {
     await auth.register(
-      regName.value.trim(),
-      regEmail.value.trim(),
-      regPassword.value,
-      regPasswordConfirmation.value,
+      form.first_name.trim(),
+      form.last_name.trim(),
+      form.gender as 'Ella' | 'Él',
+      form.email.trim(),
+      form.phone_code,
+      form.phone.trim(),
+      form.password,
     )
     authModal.close()
   } catch (err: unknown) {
@@ -158,13 +177,10 @@ async function handleRegister() {
       response?: { status?: number; data?: { message?: string; errors?: Record<string, string[]> } }
     }
     if (axiosError.response?.status === 422) {
-      const errors = axiosError.response.data?.errors
-      if (errors) {
-        const firstKey = Object.keys(errors)[0]
-        regApiError.value = (firstKey ? errors[firstKey][0] : null) ?? 'Los datos ingresados no son válidos.'
-      } else {
-        regApiError.value = axiosError.response.data?.message ?? 'Los datos ingresados no son válidos.'
-      }
+      resetValidationErrors()
+      const backendErrors = axiosError.response.data?.errors ?? {}
+      Object.assign(validationErrors, backendErrors)
+      regApiError.value = axiosError.response.data?.message ?? 'Los datos ingresados no son válidos.'
     } else if (axiosError.response?.data?.message) {
       regApiError.value = axiosError.response.data.message
     } else {
@@ -351,10 +367,8 @@ async function handleRegister() {
               </button>
 
               <!-- Heading -->
-              <div class="mb-7 text-center">
-                <span class="text-4xl" aria-hidden="true">🎁</span>
-                <h2 class="mt-3 text-2xl font-bold text-gray-800">Crear cuenta</h2>
-                <p class="mt-1 text-sm text-gray-500">Únete a Megasorpresa y disfruta compras sin complicaciones</p>
+              <div class="mb-6 text-center">
+                <h2 class="text-2xl font-bold text-gray-800">Crea una cuenta</h2>
               </div>
 
               <!-- API error -->
@@ -377,89 +391,167 @@ async function handleRegister() {
 
               <!-- Form -->
               <form novalidate @submit.prevent="handleRegister">
-                <div class="mb-4">
-                  <label for="modal-reg-name" class="mb-1.5 block text-sm font-medium text-gray-700">
-                    Nombre completo
-                  </label>
-                  <input
-                    id="modal-reg-name"
-                    v-model="regName"
-                    type="text"
-                    autocomplete="name"
-                    :class="[
-                      'w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2',
-                      regNameError
-                        ? 'border-red-400 focus:ring-red-300'
-                        : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
-                    ]"
-                    placeholder="Juan Pérez"
-                    @blur="validateRegName"
-                  />
-                  <p v-if="regNameError" class="mt-1 text-xs text-red-600">{{ regNameError }}</p>
+                <div class="mb-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      id="modal-reg-first-name"
+                      v-model="form.first_name"
+                      type="text"
+                      autocomplete="given-name"
+                      :class="[
+                        'w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2',
+                        validationErrors.first_name?.[0]
+                          ? 'border-red-400 focus:ring-red-300'
+                          : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
+                      ]"
+                      placeholder="Nombre"
+                    />
+                    <p v-if="validationErrors.first_name?.[0]" class="mt-1 text-xs text-red-600">
+                      {{ validationErrors.first_name[0] }}
+                    </p>
+                  </div>
+                  <div>
+                    <input
+                      id="modal-reg-last-name"
+                      v-model="form.last_name"
+                      type="text"
+                      autocomplete="family-name"
+                      :class="[
+                        'w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2',
+                        validationErrors.last_name?.[0]
+                          ? 'border-red-400 focus:ring-red-300'
+                          : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
+                      ]"
+                      placeholder="Apellido"
+                    />
+                    <p v-if="validationErrors.last_name?.[0]" class="mt-1 text-xs text-red-600">
+                      {{ validationErrors.last_name[0] }}
+                    </p>
+                  </div>
                 </div>
 
                 <div class="mb-4">
-                  <label for="modal-reg-email" class="mb-1.5 block text-sm font-medium text-gray-700">
-                    Correo electrónico
-                  </label>
+                  <p class="mb-2 text-sm font-medium text-gray-700">¿Cómo nos referimos a ti?</p>
+                  <div class="flex items-center gap-6">
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        v-model="form.gender"
+                        type="radio"
+                        name="modal-reg-gender"
+                        value="Ella"
+                        class="h-4 w-4 border-gray-300 text-yellow-500 focus:ring-yellow-300"
+                      >
+                      Ella
+                    </label>
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        v-model="form.gender"
+                        type="radio"
+                        name="modal-reg-gender"
+                        value="Él"
+                        class="h-4 w-4 border-gray-300 text-yellow-500 focus:ring-yellow-300"
+                      >
+                      Él
+                    </label>
+                  </div>
+                  <p v-if="validationErrors.gender?.[0]" class="mt-1 text-xs text-red-600">
+                    {{ validationErrors.gender[0] }}
+                  </p>
+                </div>
+
+                <div class="mb-4">
                   <input
                     id="modal-reg-email"
-                    v-model="regEmail"
+                    v-model="form.email"
                     type="email"
                     autocomplete="email"
                     :class="[
                       'w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2',
-                      regEmailError
+                      validationErrors.email?.[0]
                         ? 'border-red-400 focus:ring-red-300'
                         : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
                     ]"
-                    placeholder="tu@correo.com"
-                    @blur="validateRegEmail"
+                    placeholder="Correo electrónico"
                   />
-                  <p v-if="regEmailError" class="mt-1 text-xs text-red-600">{{ regEmailError }}</p>
+                  <p v-if="validationErrors.email?.[0]" class="mt-1 text-xs text-red-600">{{ validationErrors.email[0] }}</p>
+                  <p class="mt-1 text-xs text-gray-500">
+                    Recibirás promociones y correos sobre el estatus de tus pedidos.
+                  </p>
                 </div>
 
                 <div class="mb-4">
-                  <label for="modal-reg-password" class="mb-1.5 block text-sm font-medium text-gray-700">
-                    Contraseña
-                  </label>
-                  <input
-                    id="modal-reg-password"
-                    v-model="regPassword"
-                    type="password"
-                    autocomplete="new-password"
-                    :class="[
-                      'w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2',
-                      regPasswordError
-                        ? 'border-red-400 focus:ring-red-300'
-                        : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
-                    ]"
-                    placeholder="Mínimo 8 caracteres"
-                    @blur="validateRegPassword"
-                  />
-                  <p v-if="regPasswordError" class="mt-1 text-xs text-red-600">{{ regPasswordError }}</p>
+                  <div class="flex gap-2">
+                    <select
+                      id="modal-reg-phone-code"
+                      v-model="form.phone_code"
+                      :class="[
+                        'w-24 rounded-xl border px-2 text-sm shadow-sm outline-none transition focus:ring-2',
+                        validationErrors.phone_code?.[0]
+                          ? 'border-red-400 focus:ring-red-300'
+                          : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
+                      ]"
+                    >
+                      <option value="+52">+52</option>
+                      <option value="+1">+1</option>
+                      <option value="+34">+34</option>
+                      <option value="+57">+57</option>
+                    </select>
+                    <input
+                      id="modal-reg-phone"
+                      v-model="form.phone"
+                      type="tel"
+                      autocomplete="tel-national"
+                      :class="[
+                        'w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2',
+                        validationErrors.phone?.[0]
+                          ? 'border-red-400 focus:ring-red-300'
+                          : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
+                      ]"
+                      placeholder="Número de teléfono"
+                    />
+                  </div>
+                  <p v-if="validationErrors.phone_code?.[0]" class="mt-1 text-xs text-red-600">
+                    {{ validationErrors.phone_code[0] }}
+                  </p>
+                  <p v-if="validationErrors.phone?.[0]" class="mt-1 text-xs text-red-600">{{ validationErrors.phone[0] }}</p>
                 </div>
 
                 <div class="mb-6">
-                  <label for="modal-reg-confirm" class="mb-1.5 block text-sm font-medium text-gray-700">
-                    Confirmar contraseña
-                  </label>
-                  <input
-                    id="modal-reg-confirm"
-                    v-model="regPasswordConfirmation"
-                    type="password"
-                    autocomplete="new-password"
-                    :class="[
-                      'w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2',
-                      regPasswordConfirmationError
-                        ? 'border-red-400 focus:ring-red-300'
-                        : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
-                    ]"
-                    placeholder="Repite tu contraseña"
-                    @blur="validateRegConfirmation"
-                  />
-                  <p v-if="regPasswordConfirmationError" class="mt-1 text-xs text-red-600">
-                    {{ regPasswordConfirmationError }}
+                  <div class="relative">
+                    <input
+                      id="modal-reg-password"
+                      v-model="form.password"
+                      :type="showPassword ? 'text' : 'password'"
+                      autocomplete="new-password"
+                      :class="[
+                        'w-full rounded-xl border px-4 py-2.5 pr-11 text-sm shadow-sm outline-none transition focus:ring-2',
+                        validationErrors.password?.[0]
+                          ? 'border-red-400 focus:ring-red-300'
+                          : 'border-gray-300 focus:border-yellow-400 focus:ring-yellow-300',
+                      ]"
+                      placeholder="Contraseña"
+                    />
+                    <button
+                      type="button"
+                      class="absolute inset-y-0 right-0 inline-flex items-center px-3 text-gray-500 hover:text-gray-700"
+                      :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                      @click="togglePasswordVisibility"
+                    >
+                      <svg v-if="!showPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.27 2.943 9.543 7-1.273 4.057-5.065 7-9.543 7-4.477 0-8.268-2.943-9.542-7Z" />
+                      </svg>
+                      <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m3 3 18 18" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.58 10.58a2 2 0 1 0 2.83 2.83" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9.88 5.09A9.96 9.96 0 0 1 12 4.88c4.5 0 8.32 2.96 9.57 7.12a10.8 10.8 0 0 1-4.04 5.41" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6.61 6.61A10.8 10.8 0 0 0 2.43 12c.66 2.21 2.04 4.1 3.88 5.39" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p v-if="validationErrors.password?.[0]" class="mt-1 text-xs text-red-600">{{ validationErrors.password[0] }}</p>
+                  <p class="mt-1 text-xs text-gray-500">
+                    Ingresa mínimo 8 caracteres con mayúsculas, minúsculas, números y un carácter especial.
                   </p>
                 </div>
 
@@ -476,16 +568,36 @@ async function handleRegister() {
                 </button>
               </form>
 
-              <p class="mt-6 text-center text-sm text-gray-500">
-                ¿Ya tienes cuenta?
-                <button
-                  type="button"
-                  class="font-medium text-yellow-600 hover:text-yellow-700 hover:underline"
-                  @click="authModal.switchMode()"
-                >
-                  Inicia sesión
-                </button>
-              </p>
+              <div class="mt-6">
+                <div class="mb-4 flex items-center gap-3">
+                  <span class="h-px flex-1 bg-gray-200" />
+                  <span class="text-xs font-medium uppercase tracking-wide text-gray-500">O</span>
+                  <span class="h-px flex-1 bg-gray-200" />
+                </div>
+
+                <div class="mb-4 flex items-center justify-center gap-3">
+                  <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-sm font-semibold text-gray-700 transition hover:bg-gray-50" aria-label="Registrarse con Google">
+                    G
+                  </button>
+                  <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-sm font-semibold text-gray-700 transition hover:bg-gray-50" aria-label="Registrarse con Facebook">
+                    f
+                  </button>
+                  <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-sm font-semibold text-gray-700 transition hover:bg-gray-50" aria-label="Registrarse con Apple">
+                    A
+                  </button>
+                </div>
+
+                <p class="text-center text-sm text-gray-500">
+                  ¿Ya tienes una cuenta?
+                  <button
+                    type="button"
+                    class="font-medium text-yellow-600 hover:text-yellow-700 hover:underline"
+                    @click="authModal.switchMode()"
+                  >
+                    Iniciar sesión
+                  </button>
+                </p>
+              </div>
             </div>
           </div>
         </Transition>
