@@ -3,46 +3,49 @@
  * LocationSelector – Card component for selecting Estado and Ciudad.
  *
  * Designed to be placed over the hero banner with a floating card style.
- * Saves selection to Pinia store and navigates to catalog.
+ * Loads states and cities from the locations API, saves the selection
+ * (including the numeric city id) to the Pinia store and navigates to catalog.
  *
  * @emits none
  */
+import { getStates, getCitiesByState } from '~/api/locations'
 import { useLocationStore } from '~/stores/location'
+import type { CatalogState, CatalogCity } from '@@/types/index'
 
 const locationStore = useLocationStore()
 const router = useRouter()
 
-// Hardcoded data (to be replaced with API call in the future)
-const estados = [
-  { code: 'NL', name: 'Nuevo León' },
-  { code: 'CDMX', name: 'Ciudad de México' },
-  { code: 'JAL', name: 'Jalisco' },
-]
-
-const ciudadesPorEstado: Record<string, string[]> = {
-  NL: ['Monterrey', 'San Pedro Garza García', 'Santa Catarina', 'Guadalupe'],
-  CDMX: ['Benito Juárez', 'Miguel Hidalgo', 'Coyoacán', 'Cuauhtémoc'],
-  JAL: ['Guadalajara', 'Zapopan', 'Tlaquepaque', 'Tonalá'],
-}
-
-const selectedEstado = ref('')
-const selectedCiudad = ref('')
+const selectedEstado = ref<number | ''>('')
+const selectedCiudad = ref<number | ''>('')
 const showWarning = ref(false)
 
-// Computed cities based on selected state
-const availableCiudades = computed(() => {
-  if (!selectedEstado.value) return []
-  return ciudadesPorEstado[selectedEstado.value] || []
-})
+// ── Remote data ───────────────────────────────────────────────────────────────
+const { data: estados } = await useAsyncData<CatalogState[]>(
+  'location-states',
+  () => getStates().then(r => r.data.data),
+  { default: () => [] },
+)
 
-// Watch for estado changes to reset ciudad
+const { data: ciudades, status: citiesStatus } = await useAsyncData<CatalogCity[]>(
+  () => `location-cities-${selectedEstado.value || 'none'}`,
+  () => {
+    if (!selectedEstado.value) return Promise.resolve([])
+    return getCitiesByState(selectedEstado.value).then(r => r.data.data)
+  },
+  { watch: [selectedEstado], default: () => [] },
+)
+
+const availableCiudades = computed<CatalogCity[]>(() => ciudades.value ?? [])
+const isLoadingCities = computed(() => citiesStatus.value === 'pending')
+
+// Reset selected city whenever the state changes
 watch(selectedEstado, () => {
   selectedCiudad.value = ''
 })
 
 // Validation
 const isFormValid = computed(
-  () => selectedEstado.value && selectedCiudad.value,
+  () => selectedEstado.value !== '' && selectedCiudad.value !== '',
 )
 
 function handleSubmit() {
@@ -55,21 +58,23 @@ function handleSubmit() {
     return
   }
 
-  const estadoObj = estados.find(e => e.code === selectedEstado.value)
-  if (!estadoObj) return
+  const estadoObj = (estados.value ?? []).find(e => e.id === selectedEstado.value)
+  const ciudadObj = availableCiudades.value.find(c => c.id === selectedCiudad.value)
+  if (!estadoObj || !ciudadObj) return
 
   locationStore.setLocation({
-    stateCode: selectedEstado.value,
+    stateCode: String(estadoObj.id),
     stateName: estadoObj.name,
-    cityName: selectedCiudad.value,
+    cityName: ciudadObj.name,
+    cityId: ciudadObj.id,
   })
 
   // Navigate to catalog with location params
   router.push({
     path: '/catalog',
     query: {
-      state: selectedEstado.value,
-      city: selectedCiudad.value,
+      state: String(estadoObj.id),
+      city: String(ciudadObj.id),
     },
   })
 }
@@ -125,13 +130,13 @@ function handleSubmit() {
           </label>
           <select
             id="estado"
-            v-model="selectedEstado"
+            v-model.number="selectedEstado"
             class="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 shadow-sm transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
           >
             <option value="" disabled>
               Selecciona un estado
             </option>
-            <option v-for="estado in estados" :key="estado.code" :value="estado.code">
+            <option v-for="estado in estados" :key="estado.id" :value="estado.id">
               {{ estado.name }}
             </option>
           </select>
@@ -144,15 +149,15 @@ function handleSubmit() {
           </label>
           <select
             id="ciudad"
-            v-model="selectedCiudad"
-            :disabled="!selectedEstado"
+            v-model.number="selectedCiudad"
+            :disabled="!selectedEstado || isLoadingCities"
             class="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 shadow-sm transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
           >
             <option value="" disabled>
-              Selecciona una ciudad
+              {{ isLoadingCities ? 'Cargando ciudades…' : 'Selecciona una ciudad' }}
             </option>
-            <option v-for="ciudad in availableCiudades" :key="ciudad" :value="ciudad">
-              {{ ciudad }}
+            <option v-for="ciudad in availableCiudades" :key="ciudad.id" :value="ciudad.id">
+              {{ ciudad.name }}
             </option>
           </select>
         </div>

@@ -62,6 +62,9 @@ export const useLocationStore = defineStore('location', {
 
     /** Returns the city name if available */
     cityName: (state): string | null => state.selectedLocation?.cityName ?? null,
+
+    /** Returns the numeric city id used to filter the catalog, or null. */
+    cityId: (state): number | null => state.selectedLocation?.cityId ?? null,
   },
 
   actions: {

@@ -2,11 +2,10 @@ import { defineStore } from 'pinia'
 
 /**
  * Catalog store – Manages filter state for the product catalog.
- * Filters include: category, age, sort, search, and pagination.
+ * Filters include: category, sort, search, and pagination.
  */
 export interface CatalogFilterState {
   category: string
-  age: string
   sort: string
   search: string
   page: number
@@ -15,7 +14,6 @@ export interface CatalogFilterState {
 export const useCatalogStore = defineStore('catalog', {
   state: (): CatalogFilterState => ({
     category: '',
-    age: '',
     sort: '',
     search: '',
     page: 1,
@@ -26,7 +24,7 @@ export const useCatalogStore = defineStore('catalog', {
      * Check if any filters are currently active
      */
     hasActiveFilters: (state): boolean => {
-      return !!(state.category || state.age || state.search)
+      return !!(state.category || state.search)
     },
 
     /**
@@ -35,7 +33,6 @@ export const useCatalogStore = defineStore('catalog', {
     activeFilterCount: (state): number => {
       let count = 0
       if (state.category) count++
-      if (state.age) count++
       if (state.search) count++
       return count
     },
@@ -47,14 +44,6 @@ export const useCatalogStore = defineStore('catalog', {
      */
     setCategory(category: string) {
       this.category = category
-      this.page = 1
-    },
-
-    /**
-     * Set the age filter and reset to page 1
-     */
-    setAge(age: string) {
-      this.age = age
       this.page = 1
     },
 
@@ -85,7 +74,6 @@ export const useCatalogStore = defineStore('catalog', {
      */
     clearAllFilters() {
       this.category = ''
-      this.age = ''
       this.sort = ''
       this.search = ''
       this.page = 1
@@ -108,7 +96,6 @@ export const useCatalogStore = defineStore('catalog', {
      */
     initFromQuery(query: Record<string, string | string[] | undefined>) {
       this.category = (query.category as string) ?? ''
-      this.age = (query.age as string) ?? ''
       this.sort = (query.sort as string) ?? ''
       this.search = (query.search as string) ?? ''
       this.page = Number(query.page) || 1
@@ -120,7 +107,6 @@ export const useCatalogStore = defineStore('catalog', {
     toQuery(): Record<string, string> {
       const query: Record<string, string> = {}
       if (this.category) query.category = this.category
-      if (this.age) query.age = this.age
       if (this.sort) query.sort = this.sort
       if (this.search) query.search = this.search
       if (this.page > 1) query.page = String(this.page)

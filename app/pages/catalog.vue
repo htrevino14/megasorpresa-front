@@ -4,17 +4,22 @@
  *
  * Uses the landing layout so it shares the exact same header (announcement
  * bar, blue nav, megamenu) and footer as the home page.
- * Syncs filters (category, age, sort) and page number with the URL query string.
+ * Syncs filters (category, sort) and page number with the URL query string.
  * Integrates with catalogStore for state management.
  */
-import { getCatalogProducts } from '~/api/catalog'
-import type { CatalogProduct, CatalogQueryParams, PaginatedResponse } from '@@/types/index'
+import { getCatalog } from '~/api/catalog'
+import type { CatalogParams } from '~/api/catalog'
+import type { CatalogProduct, PaginatedResponse } from '@@/types/index'
 
 definePageMeta({ layout: 'landing' })
 
 const route = useRoute()
 const router = useRouter()
 const catalogStore = useCatalogStore()
+const locationStore = useLocationStore()
+
+// ── Global city from the location store ───────────────────────────────────────
+const cityId = computed<number | null>(() => locationStore.cityId)
 
 // ── Initialize store from URL on mount ────────────────────────────────────────
 onMounted(() => {
@@ -23,7 +28,6 @@ onMounted(() => {
 
 // ── Filter state (synced with store and URL) ──────────────────────────────────
 const category = computed(() => catalogStore.category)
-const age = computed(() => catalogStore.age)
 const sort = computed(() => catalogStore.sort)
 const page = computed(() => catalogStore.page)
 
@@ -67,26 +71,26 @@ function clearCategoryFilter() {
   pushQuery()
 }
 
-function clearAgeFilter() {
-  catalogStore.clearFilter('age')
-  pushQuery()
-}
-
 // ── Data fetching ─────────────────────────────────────────────────────────────
 const queryKey = computed(() =>
-  `catalog-${category.value}-${age.value}-${sort.value}-${page.value}`,
+  `catalog-${cityId.value ?? 'none'}-${category.value}-${page.value}`,
 )
 
-const params = computed<CatalogQueryParams>(() => ({
-  page: page.value,
-  ...(category.value ? { category: category.value } : {}),
-  ...(age.value ? { age: age.value } : {}),
-  ...(sort.value ? { sort: sort.value } : {}),
-}))
+const params = computed<CatalogParams | null>(() => {
+  if (!cityId.value) return null
+  return {
+    city_id: cityId.value,
+    page: page.value,
+    ...(category.value ? { category: category.value } : {}),
+  }
+})
 
-const { data: catalogData, status } = await useAsyncData<PaginatedResponse<CatalogProduct>>(
+const { data: catalogData, status } = await useAsyncData<PaginatedResponse<CatalogProduct> | null>(
   queryKey,
-  () => getCatalogProducts(params.value).then(r => r.data),
+  () => {
+    if (!params.value) return Promise.resolve(null)
+    return getCatalog(params.value).then(r => r.data)
+  },
   { watch: [queryKey] },
 )
 
@@ -94,6 +98,13 @@ const products = computed<CatalogProduct[]>(() => catalogData.value?.data ?? [])
 const meta = computed(() => catalogData.value?.meta)
 const links = computed(() => catalogData.value?.links)
 const isLoading = computed(() => status.value === 'pending')
+const hasCity = computed(() => cityId.value !== null)
+const isEmpty = computed(() => hasCity.value && !isLoading.value && products.value.length === 0)
+
+// ── Navigation helpers for the empty / no-city states ─────────────────────────
+function goChooseCity() {
+  router.push('/')
+}
 
 // ── Cart integration ──────────────────────────────────────────────────────────
 const cart = useCartStore()
@@ -141,7 +152,7 @@ async function addToCart(product: CatalogProduct) {
         </div>
 
         <!-- Active filter chips -->
-        <div v-if="category || age" class="mb-4 flex flex-wrap gap-2">
+        <div v-if="category" class="mb-4 flex flex-wrap gap-2">
           <!-- Category filter chip -->
           <span v-if="category" class="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
             Categoría: {{ category }}
@@ -154,23 +165,70 @@ async function addToCart(product: CatalogProduct) {
               ✕
             </button>
           </span>
+        </div>
 
-          <!-- Age filter chip -->
-          <span v-if="age" class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
-            Edad: {{ age }}
+        <!-- No city selected -->
+        <div
+          v-if="!hasCity"
+          class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white py-20 text-center"
+        >
+          <span class="text-5xl">📍</span>
+          <h2 class="mt-4 text-lg font-semibold text-gray-900">
+            Elige tu ciudad para ver el catálogo
+          </h2>
+          <p class="mt-1 max-w-md text-sm text-gray-500">
+            Mostramos los regalos disponibles según la ciudad de entrega.
+            Selecciona una para continuar.
+          </p>
+          <button type="button" class="btn-primary mt-6" @click="goChooseCity">
+            Seleccionar ciudad
+          </button>
+        </div>
+
+        <!-- Empty state: no products for this city/category -->
+        <div
+          v-else-if="isEmpty"
+          class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white py-20 text-center"
+        >
+          <span class="text-5xl">🎁</span>
+          <h2 class="mt-4 text-lg font-semibold text-gray-900">
+            No hay productos disponibles aquí
+          </h2>
+          <p class="mt-1 max-w-md text-sm text-gray-500">
+            <template v-if="category">
+              No encontramos productos de la categoría
+              <span class="font-medium">«{{ category }}»</span> en
+              <span class="font-medium">{{ locationStore.cityName }}</span>.
+              Prueba con otra categoría o cambia de ciudad.
+            </template>
+            <template v-else>
+              Aún no hay productos disponibles en
+              <span class="font-medium">{{ locationStore.cityName }}</span>.
+              Prueba cambiando de ciudad.
+            </template>
+          </p>
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              v-if="category"
+              type="button"
+              class="btn-primary"
+              @click="clearCategoryFilter"
+            >
+              Ver todas las categorías
+            </button>
             <button
               type="button"
-              class="ml-1 text-blue-600 hover:text-blue-800"
-              aria-label="Quitar filtro de edad"
-              @click="clearAgeFilter"
+              class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              @click="goChooseCity"
             >
-              ✕
+              Cambiar de ciudad
             </button>
-          </span>
+          </div>
         </div>
 
         <!-- Product grid -->
         <CatalogProductGrid
+          v-else
           :products="products"
           :loading="isLoading"
           @add-to-cart="addToCart"
@@ -178,7 +236,7 @@ async function addToCart(product: CatalogProduct) {
 
         <!-- Pagination -->
         <CatalogPagination
-          v-if="meta && links && meta.last_page > 1"
+          v-if="hasCity && !isEmpty && meta && links && meta.last_page > 1"
           :meta="meta"
           :links="links"
           @page-change="onPageChange"
