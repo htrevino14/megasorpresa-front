@@ -441,6 +441,8 @@ export interface Location {
   stateName: string
   /** City name (e.g. 'Monterrey') */
   cityName: string
+  /** Numeric city id used to filter the catalog by availability zone */
+  cityId?: number
   /** Optional delivery date */
   deliveryDate?: string
 }
@@ -481,7 +483,6 @@ export interface CatalogProduct {
 export interface CatalogQueryParams {
   page?: number
   category?: string
-  age?: string
   sort?: string
   search?: string
 }
