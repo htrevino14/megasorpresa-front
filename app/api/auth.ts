@@ -11,22 +11,32 @@ export const loginUser = (email: string, password: string) =>
 
 /**
  * Register a new user account.
- * @param name - Full name.
+ * @param firstName - First name.
+ * @param lastName - Last name.
+ * @param gender - Preferred salutation.
  * @param email - User email address.
+ * @param phoneCode - Country calling code.
+ * @param phone - Phone number.
  * @param password - Plain-text password.
- * @param passwordConfirmation - Must match password.
  */
 export const registerUser = (
-  name: string,
+  firstName: string,
+  lastName: string,
+  gender: 'Ella' | 'Él',
   email: string,
+  phoneCode: string,
+  phone: string,
   password: string,
-  passwordConfirmation: string,
 ) =>
   api.post<AuthResponse>('/auth/register', {
-    name,
+    first_name: firstName,
+    last_name: lastName,
+    gender,
     email,
+    phone_code: phoneCode,
+    phone,
     password,
-    password_confirmation: passwordConfirmation,
+    password_confirmation: password,
   })
 
 /**

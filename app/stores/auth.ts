@@ -105,18 +105,17 @@ export const useAuthStore = defineStore('auth', {
 
     /**
      * Register a new account and store the returned session token.
-     * @param name - Full name of the new user.
-     * @param email - User email address.
-     * @param password - Plain-text password (sent over HTTPS).
-     * @param passwordConfirmation - Must match `password`.
      */
     async register(
-      name: string,
+      firstName: string,
+      lastName: string,
+      gender: 'Ella' | 'Él',
       email: string,
+      phoneCode: string,
+      phone: string,
       password: string,
-      passwordConfirmation: string,
     ): Promise<void> {
-      const { data } = await registerUser(name, email, password, passwordConfirmation)
+      const { data } = await registerUser(firstName, lastName, gender, email, phoneCode, phone, password)
       this.token = data.token
       this.user = data.user
       safeSetItem(STORAGE_KEY, data.token)
