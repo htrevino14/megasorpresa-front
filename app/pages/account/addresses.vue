@@ -8,7 +8,6 @@
  */
 import type { PaginatedResponse } from '@@/types/index'
 import { getAddresses, type UserAddress } from '~/api/addresses'
-
 definePageMeta({
   layout: 'landing',
   middleware: 'auth',
@@ -19,6 +18,7 @@ const pagination = ref<PaginatedResponse<UserAddress>['meta'] | null>(null)
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
 const isAddressModalOpen = ref(false)
+const addressToEdit = ref<UserAddress | null>(null)
 const successMessage = ref<string | null>(null)
 
 async function fetchAddresses(page = 1): Promise<void> {
@@ -70,17 +70,19 @@ function handleDelete(address: UserAddress): void {
   console.warn('Eliminar dirección:', address.id)
 }
 
-/** Editar dirección (placeholder — abre modal / navega a form). */
+/** Editar dirección — abre el modal en modo edición. */
 function handleEdit(address: UserAddress): void {
-  // TODO: implementar apertura de modal o navegación a /account/addresses/{id}/edit
-  console.warn('Editar dirección:', address.id)
+  addressToEdit.value = address
+  isAddressModalOpen.value = true
 }
 
 function openAddressModal(): void {
+  addressToEdit.value = null
   isAddressModalOpen.value = true
 }
 
 async function handleAddressSaved(): Promise<void> {
+  addressToEdit.value = null
   successMessage.value = 'Direccion guardada con exito.'
   await fetchAddresses(1)
 
@@ -315,6 +317,7 @@ async function handleAddressSaved(): Promise<void> {
 
     <AddressModal
       v-model="isAddressModalOpen"
+      :address-to-edit="addressToEdit"
       @saved="handleAddressSaved"
     />
   </AccountLayout>

@@ -24,6 +24,11 @@ export interface UserAddress {
   city_name: string | null
   state_name: string | null
   full_address: string
+  // Campos necesarios para el formulario de edición
+  dwelling_type: DwellingTypeOption | null
+  state_id: number | null
+  city_id: number | null
+  references: string | null
 }
 
 export interface StoreAddressPayload {
@@ -58,3 +63,9 @@ export const getAddresses = (page = 1, perPage = 6, search?: string) =>
  */
 export const createAddress = (payload: StoreAddressPayload) =>
   api.post<{ data: UserAddress }>('/addresses', payload)
+
+/**
+ * Actualiza una dirección existente del usuario autenticado.
+ */
+export const updateAddress = (id: number, payload: StoreAddressPayload) =>
+  api.put<{ data: UserAddress }>(`/addresses/${id}`, payload)
