@@ -1,18 +1,22 @@
 <script setup lang="ts">
 /**
- * AddressModal - Modal para crear una nueva direccion de envio.
+ * AddressModal - Modal para crear o editar una dirección de envío.
  *
- * @prop {boolean} modelValue - Controla apertura/cierre del modal.
+ * @prop {boolean} modelValue      - Controla apertura/cierre del modal.
+ * @prop {UserAddress|null} addressToEdit - Dirección a editar. Si es null, modo creación.
  * @emits update:modelValue - Sincroniza el estado abierto/cerrado con el padre.
  * @emits saved - Notifica al padre para refrescar el listado de direcciones.
  */
-import { createAddress, type DwellingTypeOption, type StoreAddressPayload } from '~/api/addresses'
+import { createAddress, updateAddress, type DwellingTypeOption, type StoreAddressPayload, type UserAddress } from '~/api/addresses'
 import { getStates, getCitiesByState } from '~/api/locations'
 import type { CatalogCity, CatalogState } from '@@/types/index'
 
 type ValidationErrors = Partial<Record<keyof StoreAddressPayload, string[]>>
 
-const props = defineProps<{ modelValue: boolean }>()
+const props = defineProps<{
+  modelValue: boolean
+  addressToEdit?: UserAddress | null
+}>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
@@ -23,6 +27,8 @@ const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
 })
+
+const isEditing = computed(() => props.addressToEdit != null)
 
 const dwellingOptions: { value: DwellingTypeOption, label: string }[] = [
   { value: 'casa', label: 'Casa' },
@@ -88,6 +94,44 @@ function resetForm(): void {
   resetValidationErrors()
 }
 
+/**
+ * Rellena el formulario con los datos de una dirección existente.
+ *
+ * Usa `await nextTick()` entre la asignación de `state_id` y `city_id`
+ * para permitir que el watcher de `state_id` se ejecute y limpie `city_id`
+ * antes de asignar el valor correcto.
+ */
+async function fillForm(address: UserAddress): Promise<void> {
+  const knownCodes = ['+52', '+1', '+34', '+57']
+  let phoneCode = '+52'
+  let phoneNumber = address.phone ?? ''
+  for (const code of knownCodes) {
+    if (phoneNumber.startsWith(code)) {
+      phoneCode = code
+      phoneNumber = phoneNumber.slice(code.length)
+      break
+    }
+  }
+
+  form.recipient_name = address.recipient_name ?? ''
+  form.phone_code = phoneCode
+  form.phone = phoneNumber
+  form.address_search = ''
+  form.street = address.street ?? ''
+  form.ext_number = address.ext_number ?? ''
+  form.neighborhood = address.neighborhood ?? ''
+  form.dwelling_type = (address.dwelling_type ?? 'casa') as DwellingTypeOption
+  form.zip_code = address.zip_code ?? ''
+  form.references = address.references ?? ''
+
+  // Asignar state_id primero; el watcher dispara de forma asíncrona y
+  // resetea city_id a 0. Esperamos a nextTick para que eso ocurra y luego
+  // asignamos el city_id correcto.
+  form.state_id = address.state_id ?? 0
+  await nextTick()
+  form.city_id = address.city_id ?? 0
+}
+
 async function loadStates(): Promise<void> {
   loadingStates.value = true
   try {
@@ -138,10 +182,23 @@ watch(
       if (states.value.length === 0) {
         void loadStates()
       }
+      if (props.addressToEdit) {
+        void fillForm(props.addressToEdit)
+      }
       return
     }
 
     resetForm()
+  },
+)
+
+// Cuando cambia la dirección a editar mientras el modal ya está abierto.
+watch(
+  () => props.addressToEdit,
+  (address) => {
+    if (address && isOpen.value) {
+      void fillForm(address)
+    }
   },
 )
 
@@ -153,7 +210,7 @@ async function handleSubmit(): Promise<void> {
   resetValidationErrors()
 
   try {
-    await createAddress({
+    const payload = {
       ...form,
       recipient_name: form.recipient_name.trim(),
       phone: form.phone.trim(),
@@ -163,7 +220,14 @@ async function handleSubmit(): Promise<void> {
       zip_code: form.zip_code.trim(),
       references: form.references?.trim() ?? '',
       address_search: form.address_search?.trim() ?? '',
-    })
+    }
+
+    if (props.addressToEdit) {
+      await updateAddress(props.addressToEdit.id, payload)
+    }
+    else {
+      await createAddress(payload)
+    }
 
     emit('saved')
     closeModal()
@@ -208,7 +272,7 @@ onMounted(() => {
         class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/35 px-4 py-6"
         role="dialog"
         aria-modal="true"
-        aria-label="Agregar direccion"
+        :aria-label="isEditing ? 'Editar direccion' : 'Agregar direccion'"
       >
         <div class="absolute inset-0" @click="closeModal" />
 
@@ -224,7 +288,9 @@ onMounted(() => {
             </svg>
           </button>
 
-          <h2 class="mb-5 text-3xl font-bold text-gray-900">Nuevo destinatario</h2>
+          <h2 class="mb-5 text-3xl font-bold text-gray-900">
+            {{ isEditing ? 'Editar destinatario' : 'Nuevo destinatario' }}
+          </h2>
 
           <p
             v-if="apiError"
@@ -405,7 +471,7 @@ onMounted(() => {
               :disabled="isSubmitting"
               class="w-full rounded-full bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-gray-900 transition hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {{ isSubmitting ? 'Guardando...' : 'Continuar' }}
+              {{ isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Continuar' }}
             </button>
           </form>
         </div>
