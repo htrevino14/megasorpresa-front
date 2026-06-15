@@ -69,3 +69,9 @@ export const createAddress = (payload: StoreAddressPayload) =>
  */
 export const updateAddress = (id: number, payload: StoreAddressPayload) =>
   api.put<{ data: UserAddress }>(`/addresses/${id}`, payload)
+
+/**
+ * Elimina una dirección existente del usuario autenticado.
+ */
+export const deleteAddress = (id: number) =>
+  api.delete<{ message: string }>(`/addresses/${id}`)

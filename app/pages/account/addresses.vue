@@ -7,7 +7,7 @@
  * paginación numerada.
  */
 import type { PaginatedResponse } from '@@/types/index'
-import { getAddresses, type UserAddress } from '~/api/addresses'
+import { deleteAddress, getAddresses, type UserAddress } from '~/api/addresses'
 definePageMeta({
   layout: 'landing',
   middleware: 'auth',
@@ -18,8 +18,9 @@ const pagination = ref<PaginatedResponse<UserAddress>['meta'] | null>(null)
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
 const isAddressModalOpen = ref(false)
-const addressToEdit = ref<UserAddress | null>(null)
+const selectedAddress = ref<UserAddress | null>(null)
 const successMessage = ref<string | null>(null)
+const isDeleting = ref(false)
 
 async function fetchAddresses(page = 1): Promise<void> {
   isLoading.value = true
@@ -64,25 +65,48 @@ const pageNumbers = computed<(number | null)[]>(() => {
   return result
 })
 
-/** Eliminar dirección (placeholder — requiere endpoint DELETE /addresses/{id}). */
-function handleDelete(address: UserAddress): void {
-  // TODO: implementar confirmación + DELETE /api/addresses/{id}
-  console.warn('Eliminar dirección:', address.id)
+async function confirmDelete(address: UserAddress): Promise<void> {
+  if (isDeleting.value) return
+
+  const shouldDelete = window.confirm(
+    '¿Estás seguro de que deseas eliminar esta dirección? Esta acción no se puede deshacer',
+  )
+
+  if (!shouldDelete) {
+    return
+  }
+
+  isDeleting.value = true
+  try {
+    await deleteAddress(address.id)
+    addresses.value = addresses.value.filter(item => item.id !== address.id)
+    successMessage.value = 'Dirección eliminada'
+
+    setTimeout(() => {
+      successMessage.value = null
+    }, 3000)
+  }
+  catch {
+    errorMessage.value = 'No pudimos eliminar la dirección. Intenta de nuevo.'
+  }
+  finally {
+    isDeleting.value = false
+  }
 }
 
 /** Editar dirección — abre el modal en modo edición. */
 function handleEdit(address: UserAddress): void {
-  addressToEdit.value = address
+  selectedAddress.value = address
   isAddressModalOpen.value = true
 }
 
 function openAddressModal(): void {
-  addressToEdit.value = null
+  selectedAddress.value = null
   isAddressModalOpen.value = true
 }
 
 async function handleAddressSaved(): Promise<void> {
-  addressToEdit.value = null
+  selectedAddress.value = null
   successMessage.value = 'Direccion guardada con exito.'
   await fetchAddresses(1)
 
@@ -233,7 +257,7 @@ async function handleAddressSaved(): Promise<void> {
               type="button"
               title="Eliminar dirección"
               class="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-              @click="handleDelete(address)"
+              @click="confirmDelete(address)"
             >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -317,7 +341,7 @@ async function handleAddressSaved(): Promise<void> {
 
     <AddressModal
       v-model="isAddressModalOpen"
-      :address-to-edit="addressToEdit"
+      :address-to-edit="selectedAddress"
       @saved="handleAddressSaved"
     />
   </AccountLayout>
