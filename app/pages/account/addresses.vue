@@ -18,6 +18,8 @@ const addresses = ref<UserAddress[]>([])
 const pagination = ref<PaginatedResponse<UserAddress>['meta'] | null>(null)
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
+const isAddressModalOpen = ref(false)
+const successMessage = ref<string | null>(null)
 
 async function fetchAddresses(page = 1): Promise<void> {
   isLoading.value = true
@@ -73,6 +75,19 @@ function handleEdit(address: UserAddress): void {
   // TODO: implementar apertura de modal o navegación a /account/addresses/{id}/edit
   console.warn('Editar dirección:', address.id)
 }
+
+function openAddressModal(): void {
+  isAddressModalOpen.value = true
+}
+
+async function handleAddressSaved(): Promise<void> {
+  successMessage.value = 'Direccion guardada con exito.'
+  await fetchAddresses(1)
+
+  setTimeout(() => {
+    successMessage.value = null
+  }, 3000)
+}
 </script>
 
 <template>
@@ -90,9 +105,17 @@ function handleEdit(address: UserAddress): void {
       <button
         type="button"
         class="self-start text-sm font-semibold text-pink-600 transition-colors hover:text-pink-700 sm:self-auto"
+        @click="openAddressModal"
       >
         + Agregar una nueva dirección
       </button>
+    </div>
+
+    <div
+      v-if="successMessage"
+      class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+    >
+      {{ successMessage }}
     </div>
 
     <!-- ── Estado de carga ─────────────────────────────────────────────── -->
@@ -159,6 +182,7 @@ function handleEdit(address: UserAddress): void {
       <button
         type="button"
         class="mt-4 inline-flex items-center rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm transition-colors hover:bg-yellow-500"
+        @click="openAddressModal"
       >
         + Agregar dirección
       </button>
@@ -288,5 +312,10 @@ function handleEdit(address: UserAddress): void {
         </svg>
       </button>
     </nav>
+
+    <AddressModal
+      v-model="isAddressModalOpen"
+      @saved="handleAddressSaved"
+    />
   </AccountLayout>
 </template>
