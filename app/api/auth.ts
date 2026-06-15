@@ -1,6 +1,14 @@
 import api from '~/api/index'
 import type { AuthResponse, User } from '@@/types/index'
 
+export type UpdateProfilePayload = {
+  first_name: string
+  last_name: string
+  gender: 'Ella' | 'Él'
+  phone_code: string
+  phone: string
+}
+
 /**
  * Authenticate an existing user.
  * @param email - User email address.
@@ -49,6 +57,12 @@ export const logoutUser = () => api.post('/auth/logout')
  * Responde `{ data: User }` desde `GET /api/profile`.
  */
 export const getProfile = () => api.get<{ data: User }>('/profile')
+
+/**
+ * Actualiza la informacion personal del usuario autenticado.
+ */
+export const updateProfile = (payload: UpdateProfilePayload) =>
+  api.put<{ data: User }>('/profile', payload)
 
 /**
  * Fetch the currently authenticated user's profile.

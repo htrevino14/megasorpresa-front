@@ -7,6 +7,7 @@
  */
 import type { User } from '@@/types/index'
 import { getProfile } from '~/api/auth'
+import EditProfileModal from '~/components/account/EditProfileModal.vue'
 
 definePageMeta({
   layout: 'landing',
@@ -15,6 +16,8 @@ definePageMeta({
 
 const userData = ref<User | null>(null)
 const isLoading = ref(true)
+const isEditModalOpen = ref(false)
+const successMessage = ref<string | null>(null)
 
 /** Carga los datos del perfil al montar el componente. */
 onMounted(async () => {
@@ -50,14 +53,29 @@ const fullName = computed(() => {
 interface ProfileField {
   label: string
   value: string
+  editable: boolean
 }
 
 const profileFields = computed<ProfileField[]>(() => [
-  { label: 'Nombre', value: displayValue(fullName.value) },
-  { label: 'Género', value: displayValue(userData.value?.gender) },
-  { label: 'Número de teléfono', value: displayValue(userData.value?.phone) },
-  { label: 'Correo electrónico', value: displayValue(userData.value?.email) },
+  { label: 'Nombre', value: displayValue(fullName.value), editable: true },
+  { label: 'Género', value: displayValue(userData.value?.gender), editable: true },
+  { label: 'Número de teléfono', value: displayValue(userData.value?.phone), editable: true },
+  { label: 'Correo electrónico', value: displayValue(userData.value?.email), editable: false },
 ])
+
+function openEditModal(): void {
+  isEditModalOpen.value = true
+}
+
+function handleProfileUpdated(updatedUser: User): void {
+  userData.value = updatedUser
+  isEditModalOpen.value = false
+  successMessage.value = 'Informacion actualizada con exito.'
+
+  setTimeout(() => {
+    successMessage.value = null
+  }, 3000)
+}
 </script>
 
 <template>
@@ -70,6 +88,13 @@ const profileFields = computed<ProfileField[]>(() => [
     <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 sm:p-8">
       <h2 class="text-xl font-bold text-gray-900">Mi perfil</h2>
       <p class="mt-1 text-sm text-gray-500">Datos de la cuenta</p>
+
+      <div
+        v-if="successMessage"
+        class="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+      >
+        {{ successMessage }}
+      </div>
 
       <!-- Estado de carga -->
       <div v-if="isLoading" class="mt-6 space-y-4">
@@ -93,8 +118,10 @@ const profileFields = computed<ProfileField[]>(() => [
             </p>
           </div>
           <button
+            v-if="field.editable"
             type="button"
             class="shrink-0 text-sm font-semibold text-pink-600 transition-colors hover:text-pink-700"
+            @click="openEditModal"
           >
             Editar
           </button>
@@ -127,5 +154,12 @@ const profileFields = computed<ProfileField[]>(() => [
         </button>
       </div>
     </div>
+
+    <EditProfileModal
+      :is-open="isEditModalOpen"
+      :user="userData"
+      @close="isEditModalOpen = false"
+      @updated="handleProfileUpdated"
+    />
   </AccountLayout>
 </template>
