@@ -96,27 +96,31 @@ function toSlug(text: string): string {
     </div>
 
     <!-- ── Main nav bar (blue) ───────────────────────────────────────────── -->
-    <div class="bg-[#0072E3] px-4 py-3 md:px-6">
-      <div class="relative mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <!-- Hamburger (mobile only) -->
-        <button
-          class="shrink-0 text-white md:hidden"
-          aria-label="Abrir menú"
-          @click="toggleMobileMenu"
-        >
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+    <div class="bg-[#0072E3] px-4 py-3 md:px-8">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <!-- ── Left block: hamburger + logo ──────────────────────────────── -->
+        <div class="flex items-center gap-2">
+          <!-- Hamburger (mobile only) -->
+          <button
+            class="shrink-0 text-white md:hidden"
+            aria-label="Abrir menú"
+            @click="toggleMobileMenu"
+          >
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
 
-        <!-- Logo -->
-        <NuxtLink to="/" class="absolute left-1/2 -translate-x-1/2 shrink-0 md:static md:translate-x-0">
-          <span class="inline-flex items-center gap-1 whitespace-nowrap text-2xl font-extrabold tracking-tight text-white md:text-3xl">
-            <span aria-hidden="true">🎁</span>
-            <span class="text-yellow-300">Megasorpresa</span>
-          </span>
-        </NuxtLink>
+          <!-- Logo -->
+          <NuxtLink to="/" class="shrink-0">
+            <span class="inline-flex items-center gap-1 whitespace-nowrap text-xl font-extrabold tracking-tight text-white sm:text-2xl md:text-3xl">
+              <span aria-hidden="true">🎁</span>
+              <span class="text-yellow-300">Megasorpresa</span>
+            </span>
+          </NuxtLink>
+        </div>
 
+        <!-- ── Right block: user + cart ──────────────────────────────────── -->
         <!-- Mobile cart icon -->
         <NuxtLink
           to="/cart"

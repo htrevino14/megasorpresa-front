@@ -5,10 +5,30 @@
  * require Nuxt context (token management, SPA-safe redirects via navigateTo).
  */
 import api from '~/api/index'
+import { useLocationStore } from '~/stores/location'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
   api.defaults.baseURL = config.public.apiBaseUrl as string
+
+  const locationStore = useLocationStore()
+
+  /**
+   * Inject the selected city as `X-City-Id` on every outgoing request so the
+   * Laravel backend can filter products by delivery coverage.
+   *
+   * The value is read from `useLocationStore` (the source of truth, restored
+   * from localStorage on the client). On the server `selectedCityId` is null,
+   * so no header is sent and SSR stays coverage-agnostic.
+   */
+  api.interceptors.request.use((axiosConfig) => {
+    const cityId = locationStore.selectedCityId
+    if (cityId != null) {
+      axiosConfig.headers = axiosConfig.headers ?? {}
+      axiosConfig.headers['X-City-Id'] = String(cityId)
+    }
+    return axiosConfig
+  })
 
   /** Attach Bearer token from localStorage before every request (client-only). */
   api.interceptors.request.use((axiosConfig) => {
