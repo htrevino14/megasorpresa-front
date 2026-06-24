@@ -5,5 +5,6 @@
   </NuxtLayout>
   <ClientOnly>
     <AuthModal />
+    <CitySelectionModal />
   </ClientOnly>
 </template>
