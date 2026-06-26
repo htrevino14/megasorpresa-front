@@ -212,7 +212,7 @@ function statusBadgeClass(statusName: string | null | undefined): string {
               ${{ Number(order.total_amount).toFixed(2) }}
             </span>
             <NuxtLink
-              :to="`/account/orders/${order.id}`"
+              :to="`/order/${order.id}`"
               class="text-sm font-semibold text-pink-600 transition-colors hover:text-pink-700"
             >
               Ver detalles →
