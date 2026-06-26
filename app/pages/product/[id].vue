@@ -25,15 +25,14 @@ const isLoading = computed(() => status.value === 'pending')
 // ── Cart integration ───────────────────────────────────────────────────────────
 const cart = useCartStore()
 const isAddingToCart = ref(false)
-const selectedWrappingId = ref<number | null>(null)
 
 async function handleAddToCart(quantity: number) {
   if (!product.value) return
   isAddingToCart.value = true
   try {
-    await cart.addItem(product.value.id, quantity, selectedWrappingId.value)
+    await cart.addItem(product.value.id, quantity)
     // Success! Could show a toast notification here
-    console.log('Added to cart:', product.value.id, 'qty:', quantity, 'wrapping:', selectedWrappingId.value)
+    console.log('Added to cart:', product.value.id, 'qty:', quantity)
   } catch (error) {
     console.error('Failed to add to cart:', error)
     // TODO: Show error notification to user
@@ -130,9 +129,6 @@ useHead(
               :categories="product.categories"
               :stock-quantity="product.stock_quantity"
             />
-
-            <!-- Gift Wrapping Selector -->
-            <CheckoutWrapperSelector v-model="selectedWrappingId" />
 
             <ProductAddToCartAction
               :stock-quantity="product.stock_quantity"
